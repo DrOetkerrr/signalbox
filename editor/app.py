@@ -73,6 +73,12 @@ def _sync_sounds_dir(cfg):
     """Purge sounds whose files no longer exist; add new files; remove orphaned event refs."""
     if not os.path.isdir(SOUNDS_DIR):
         return
+    # Only remove stale entries if the sounds dir has files — guards against
+    # wiping the config on a fresh Pi where sounds haven't been copied yet
+    sounds_on_disk = [f for f in os.listdir(SOUNDS_DIR)
+                      if os.path.splitext(f)[1].lower() in AUDIO_EXTS]
+    if not sounds_on_disk:
+        return
     # Remove stale sound entries
     for sid in list(cfg.get('sounds', {}).keys()):
         s = cfg['sounds'][sid]
