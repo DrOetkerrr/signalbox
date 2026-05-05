@@ -121,15 +121,13 @@ def _sync_sounds_dir(cfg):
         while sound_id in cfg['sounds']:
             sound_id = f"{base_id}_{n}"; n += 1
         cfg['sounds'][sound_id] = {"file": filename, "volume": 1.0, "pan": 0.0, "filter": 0}
-    # Remove scene events referencing sounds no longer in cfg['sounds']
+    # Warn about scene events referencing sounds not on disk — but never delete them
     valid = set(cfg['sounds'].keys())
     for atmo_data in cfg.get('atmospheres', {}).values():
         for scene in atmo_data.get('scenes', []):
-            before = len(scene.get('events', []))
-            scene['events'] = [e for e in scene['events'] if e.get('sound', '') in valid]
-            removed = before - len(scene['events'])
-            if removed:
-                print(f"[sync] removed {removed} orphaned event(s) from '{scene.get('name', scene.get('id', '?'))}'")
+            for evt in scene.get('events', []):
+                if evt.get('sound', '') not in valid:
+                    print(f"[sync] WARNING: scene '{scene.get('name', '?')}' references missing sound '{evt.get('sound')}' — kept")
     # Remove loops referencing sounds no longer in cfg['sounds']
     for atmo_data in cfg.get('atmospheres', {}).values():
         atmo_data['loops'] = [l for l in atmo_data.get('loops', []) if l.get('sound', '') in valid]

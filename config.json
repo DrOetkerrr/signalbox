@@ -48,6 +48,43 @@
         {
           "events": [
             {
+              "reverb_wet": 0.23,
+              "sound": "sf_walking_on_wooden_floor",
+              "start": 6
+            },
+            {
+              "duration": 80,
+              "fade_out": 2,
+              "pan": 0.61,
+              "sound": "sf_airplane",
+              "start": 4,
+              "volume": 0.22
+            },
+            {
+              "duration": 10,
+              "offset": 4.5,
+              "sound": "sf_tea_kettle_whistle",
+              "start": 15,
+              "volume": 0.36
+            },
+            {
+              "sound": "sf_door_open",
+              "start": 0,
+              "volume": 1
+            },
+            {
+              "sound": "sf_man_whistling",
+              "start": 8.5,
+              "volume": 1
+            },
+            {
+              "duration": 4,
+              "reverb_wet": 0.16,
+              "sound": "sf_walking_on_wooden_floor",
+              "start": 21,
+              "volume": 1
+            },
+            {
               "duration": 30,
               "fade_out": 2,
               "filter": 300,
@@ -55,6 +92,29 @@
               "sound": "radio_whistle_while_you_work",
               "start": 63.5,
               "volume": 0.12
+            },
+            {
+              "duration": 3,
+              "reverb_wet": 0.18,
+              "sound": "sf_radio_tuning",
+              "start": 60.5,
+              "volume": 0.14
+            },
+            {
+              "reverb_wet": 0.17,
+              "sound": "sf_walking_on_wooden_floor",
+              "start": 55.5,
+              "volume": 1
+            },
+            {
+              "sound": "sf_switch",
+              "start": 59.5,
+              "volume": 0.21
+            },
+            {
+              "sound": "sf_tea_pouring",
+              "start": 27,
+              "volume": 0.16
             }
           ],
           "id": "scene_1",
@@ -65,6 +125,35 @@
         {
           "events": [
             {
+              "filter": 4000,
+              "pan": -0.74,
+              "reverb_wet": 0.23,
+              "sound": "1970_telephone_ring_1_4_seconds_cycle_nl_1",
+              "start": 8,
+              "volume": 0.32
+            },
+            {
+              "duration": 8,
+              "sound": "sf_walking_on_wooden_floor",
+              "start": 4.5
+            },
+            {
+              "filter": 0,
+              "pan": -0.77,
+              "reverb_room": 0.31,
+              "reverb_wet": 0.24,
+              "sound": "1970_telephone_ring_1_4_seconds_cycle_nl_1",
+              "start": 13,
+              "volume": 0.3
+            },
+            {
+              "duration": 4,
+              "pan": 0.74,
+              "sound": "sf_walking_on_wooden_floor",
+              "start": 31.5,
+              "volume": 1
+            },
+            {
               "filter": 1500,
               "pan": 0.79,
               "reverb_room": 0.27,
@@ -72,6 +161,23 @@
               "sound": "2024_is_not_passed_yet",
               "start": 19.5,
               "volume": 0.45
+            },
+            {
+              "reverb_wet": 0.21,
+              "sound": "sf_bell_signal",
+              "start": 16.5,
+              "volume": 0.21
+            },
+            {
+              "reverb_wet": 0.85,
+              "sound": "sf_blanche_steam_whistle",
+              "start": 25.5,
+              "volume": 0.12
+            },
+            {
+              "sound": "sf_door_open",
+              "start": 36.5,
+              "volume": 1
             }
           ],
           "id": "id_6cxf0ze",
@@ -82,11 +188,52 @@
         {
           "events": [
             {
+              "duration": 8,
+              "sound": "sf_rotary_phone_dialing",
+              "start": 4.5,
+              "volume": 0.34
+            },
+            {
+              "duration": 4,
+              "reverb_wet": 0.27,
+              "sound": "sf_walking_on_wooden_floor",
+              "start": 0,
+              "volume": 1
+            },
+            {
+              "reverb_wet": 0.27,
+              "sound": "sf_walking_on_wooden_floor",
+              "start": 38.5,
+              "volume": 1
+            },
+            {
               "reverb_room": 0.32,
               "reverb_wet": 0.25,
               "sound": "fiona_does_not_fancy_a_drink",
               "start": 12.5,
               "volume": 0.27
+            },
+            {
+              "sound": "sf_walking_on_wooden_floor",
+              "start": 20,
+              "volume": 1
+            },
+            {
+              "reverb_wet": 0.15,
+              "sound": "sf_switch",
+              "start": 4,
+              "volume": 0.11
+            },
+            {
+              "sound": "sf_door_open",
+              "start": 48.5,
+              "volume": 0.31
+            },
+            {
+              "reverb_wet": 0.14,
+              "sound": "sf_switch",
+              "start": 38,
+              "volume": 0.11
             }
           ],
           "id": "id_42inzb6",
@@ -102,6 +249,17 @@
               "volume": 1
             },
             {
+              "duration": 10,
+              "sound": "sf_switchting",
+              "start": 15.5,
+              "volume": 0.23
+            },
+            {
+              "sound": "sf_blanche_steam_whistle",
+              "start": 19,
+              "volume": 0.17
+            },
+            {
               "duration": 3,
               "offset": 1,
               "reverb_wet": 0.2,
@@ -115,17 +273,6 @@
               "sound": "sf_bell_signal",
               "start": 12,
               "volume": 0.25
-            },
-            {
-              "duration": 10,
-              "sound": "sf_switchting",
-              "start": 15.5,
-              "volume": 0.23
-            },
-            {
-              "sound": "sf_blanche_steam_whistle",
-              "start": 19,
-              "volume": 0.17
             }
           ],
           "id": "id_2ld3zhb",
@@ -136,12 +283,56 @@
         {
           "events": [
             {
+              "fade_in": 4.5,
+              "pan": -0.57,
+              "reverb_wet": 0,
+              "sound": "sf_steam_train_passing",
+              "start": 0,
+              "volume": 0.25
+            },
+            {
+              "duration": 9,
+              "reverb_wet": 0.44,
+              "sound": "sf_rotary_phone_dialing",
+              "start": 10.5,
+              "volume": 0.38
+            },
+            {
+              "duration": 4,
+              "reverb_room": 0.47,
+              "reverb_wet": 0.21,
+              "sound": "sf_switchting",
+              "start": 35.5,
+              "volume": 0.33
+            },
+            {
               "filter": 2200,
               "reverb_room": 0.23,
               "reverb_wet": 0.3,
               "sound": "jimmy_peter_train_is_delayed_take_a_brew",
               "start": 20,
               "volume": 0.38
+            },
+            {
+              "sound": "sf_walking_on_wooden_floor",
+              "start": 0,
+              "volume": 1
+            },
+            {
+              "sound": "sf_bell_signal",
+              "start": 30,
+              "volume": 0.21
+            },
+            {
+              "sound": "sf_bell_signal",
+              "start": 38.5,
+              "volume": 0.21
+            },
+            {
+              "reverb_wet": 0.17,
+              "sound": "sf_blanche_steam_whistle",
+              "start": 62,
+              "volume": 0.35
             },
             {
               "reverb_room": 0.15,
@@ -159,13 +350,46 @@
         {
           "events": [
             {
+              "duration": 3,
+              "pan": -0.51,
+              "reverb_wet": 0.16,
+              "sound": "sf_radio_tuning",
+              "start": 4,
+              "volume": 0.16
+            },
+            {
               "duration": 140,
               "fade_out": 3.5,
               "pan": 0.82,
               "reverb_wet": 0.42,
               "sound": "radio_feeling_like_a_dream",
               "start": 6.5,
-              "volume": 0.15
+              "volume": 0.11
+            },
+            {
+              "sound": "sf_man_whistling",
+              "start": 0,
+              "volume": 1
+            },
+            {
+              "pan": 0.79,
+              "reverb_room": 0.78,
+              "reverb_wet": 0.65,
+              "sound": "sf_bell_signal",
+              "start": 21,
+              "volume": 0.3
+            },
+            {
+              "fade_out": 3,
+              "sound": "sf_steam_train_passing",
+              "start": 30,
+              "volume": 0.37
+            },
+            {
+              "pan": 0.77,
+              "sound": "sf_man_whistling",
+              "start": 15.5,
+              "volume": 1
             },
             {
               "reverb_room": 0.4,
@@ -175,23 +399,14 @@
               "volume": 0.49
             },
             {
-              "fade_in": 4.5,
-              "fade_out": 3,
-              "sound": "sf_train_whisltle_and_passing_by",
-              "start": 12.5,
+              "sound": "radio_feeling_like_a_dream",
+              "start": 120.5,
               "volume": 1
             },
             {
-              "sound": "sf_switch",
-              "start": 0.5,
-              "volume": 0.31
-            },
-            {
-              "duration": 6,
-              "pan": -0.69,
-              "sound": "sf_radio_tuning",
-              "start": 1,
-              "volume": 0.65
+              "sound": "radio_feeling_like_a_dream",
+              "start": 6.5,
+              "volume": 0.21
             }
           ],
           "id": "id_g9hnk1z",
@@ -201,6 +416,17 @@
         },
         {
           "events": [
+            {
+              "pan": -0.63,
+              "sound": "sf_sheep_sound",
+              "start": 3,
+              "volume": 0.09
+            },
+            {
+              "sound": "sf_door_open",
+              "start": 0,
+              "volume": 1
+            },
             {
               "duration": 100,
               "fade_out": null,
@@ -212,37 +438,48 @@
               "volume": 0.08
             },
             {
-              "reverb_wet": 0.13,
+              "pan": -0.89,
+              "reverb_wet": 0.17,
+              "sound": "sf_coughing",
+              "start": 13.5,
+              "volume": 0.21
+            },
+            {
+              "sound": "sf_bell_signal",
+              "start": 25.5,
+              "volume": 0.26
+            },
+            {
+              "reverb_wet": 0.18,
               "sound": "jimmy_peter_train_is_delayed_take_a_brew",
-              "start": 43.5,
-              "volume": 0.49
+              "start": 41.5,
+              "volume": 0.36
             },
             {
-              "pan": 0.84,
-              "reverb_wet": 0.15,
-              "sound": "sf_sheep_sound",
-              "start": 5.5,
-              "volume": 0.14
+              "reverb_room": 0.4,
+              "reverb_wet": 0.25,
+              "sound": "sf_walking_on_wooden_floor",
+              "start": 51.5,
+              "volume": 0.31
             },
             {
-              "reverb_wet": 0.14,
               "sound": "sf_switch",
               "start": 8,
-              "volume": 0.32
+              "volume": 0.19
             },
             {
-              "sound": "sf_bell_signal",
-              "start": 30,
-              "volume": 0.37
-            },
-            {
-              "duration": 5,
+              "duration": 7,
               "sound": "sf_rotary_phone_dialing",
-              "start": 38,
-              "volume": 0.98
+              "start": 34.5,
+              "volume": 1
             },
             {
-              "sound": "sf_bell_signal",
+              "sound": "sf_switch",
+              "start": 50.5,
+              "volume": 1
+            },
+            {
+              "sound": "sf_coughing",
               "start": 34.5,
               "volume": 1
             }
@@ -255,25 +492,47 @@
         {
           "events": [
             {
-              "reverb_wet": 0.24,
-              "sound": "jimmy_mum_is_calling",
-              "start": 6,
-              "volume": 0.18
-            },
-            {
               "sound": "1970_telephone_ring_1_4_seconds_cycle_nl_1",
               "start": 0,
-              "volume": 0.32
-            },
-            {
-              "sound": "1970_telephone_ring_1_4_seconds_cycle_nl_1",
-              "start": 2,
-              "volume": 0.18
+              "volume": 0.25
             },
             {
               "sound": "sf_switch",
-              "start": 4,
-              "volume": 0.15
+              "start": 5,
+              "volume": 0.09
+            },
+            {
+              "reverb_wet": 0.24,
+              "sound": "jimmy_mum_is_calling",
+              "start": 5.5,
+              "volume": 0.18
+            },
+            {
+              "duration": 3,
+              "sound": "sf_train_bell_signals",
+              "start": 27.5,
+              "volume": 0.18
+            },
+            {
+              "sound": "sf_switchting",
+              "start": 34,
+              "volume": 1
+            },
+            {
+              "duration": 3,
+              "sound": "sf_train_bell_signals",
+              "start": 48,
+              "volume": 0.22
+            },
+            {
+              "sound": "sf_walking_on_wooden_floor",
+              "start": 51.5,
+              "volume": 1
+            },
+            {
+              "sound": "sf_door_open",
+              "start": 61,
+              "volume": 1
             }
           ],
           "id": "id_zejalqm",
@@ -292,6 +551,12 @@
               "volume": 0.44
             },
             {
+              "duration": 6,
+              "sound": "sf_rotary_phone_dialing",
+              "start": 0,
+              "volume": 1
+            },
+            {
               "duration": 40,
               "fade_in": 2,
               "pan": -0.88,
@@ -300,12 +565,29 @@
               "volume": 0.09
             },
             {
+              "duration": 2,
+              "sound": "sf_radio_tuning",
+              "start": 40,
+              "volume": 1
+            },
+            {
               "duration": 20,
               "fade_out": 4,
               "pan": -0.88,
               "sound": "radio_i_double_dare_you",
               "start": 42,
               "volume": 0.1
+            },
+            {
+              "pan": 0.63,
+              "sound": "sf_walking_on_wooden_floor",
+              "start": 45,
+              "volume": 1
+            },
+            {
+              "sound": "sf_door_open",
+              "start": 62.5,
+              "volume": 1
             }
           ],
           "id": "id_t670ikw",
@@ -323,6 +605,29 @@
               "sound": "juimmy_complaint_to_the_office",
               "start": 11.5,
               "volume": 0.33
+            },
+            {
+              "sound": "sf_coughing",
+              "start": 6.5,
+              "volume": 0.25
+            },
+            {
+              "duration": 6.5,
+              "sound": "sf_rotary_phone_dialing",
+              "start": 0,
+              "volume": 0.66
+            },
+            {
+              "sound": "sf_blanche_steam_whistle",
+              "start": 36.5,
+              "volume": 0.2
+            },
+            {
+              "pan": -0.7,
+              "reverb_room": 0.22,
+              "sound": "sf_drive_by_car_sound",
+              "start": 26.5,
+              "volume": 0.24
             }
           ],
           "id": "id_7o4jy0y",
@@ -333,10 +638,31 @@
         {
           "events": [
             {
+              "duration": 8,
+              "sound": "sf_rotary_phone_dialing",
+              "start": 0,
+              "volume": 0.69
+            },
+            {
               "reverb_wet": 0.14,
               "sound": "jimmy_coal_is_out",
               "start": 8.5,
               "volume": 0.21
+            },
+            {
+              "sound": "sf_door_open",
+              "start": 47.5,
+              "volume": 0.22
+            },
+            {
+              "sound": "sf_airplane",
+              "start": 16,
+              "volume": 0.2
+            },
+            {
+              "sound": "sf_switch",
+              "start": 8,
+              "volume": 1
             }
           ],
           "id": "id_icaq2hc",
@@ -376,32 +702,33 @@
               "volume": 0.41
             },
             {
-              "duration": 110,
-              "fade_in": 0,
-              "fade_out": 2,
-              "pan": 0.94,
-              "reverb_room": 0.31,
-              "reverb_wet": 0.14,
-              "sound": "radio_glen_island_hop",
-              "start": 16.5,
-              "volume": 0.04
-            },
-            {
               "sound": "sf_walking_on_wooden_floor",
               "start": 0,
               "volume": 1
             },
             {
-              "sound": "sf_switch",
-              "start": 16.5,
-              "volume": 0.26
+              "duration": 110,
+              "fade_in": 5.5,
+              "fade_out": 2,
+              "pan": 0.94,
+              "reverb_room": 0.31,
+              "reverb_wet": 0.14,
+              "sound": "radio_glen_island_hop",
+              "start": 17,
+              "volume": 0.04
             },
             {
-              "sound": "sf_dog_barking",
-              "start": 27.5,
-              "volume": 0.17,
-              "reverb_wet": 0.15,
-              "pan": 0.88
+              "pan": -0.22,
+              "reverb_room": 0.29,
+              "sound": "sf_door_open",
+              "start": 19,
+              "volume": 1
+            },
+            {
+              "pan": -0.72,
+              "sound": "sf_car_paqssing",
+              "start": 30,
+              "volume": 0.22
             }
           ],
           "id": "id_k8kz3rg",
