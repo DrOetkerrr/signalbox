@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <title>Signalbox</title>
+  <link href="https://fonts.googleapis.com/css2?family=IM+Fell+English&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --gold:      #c8a84b;
+      --gold-mid:  #a88030;
+      --gold-dim:  #6a4a20;
+      --bg:        #0e0805;
+      --bg2:       #120904;
+      --bg3:       #0a0503;
+      --border:    #3a2208;
+      --green:     #4a8a4a;
+      --green-hi:  #78c878;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+    html, body {
+      width: 100%; height: 100%; overflow: hidden;
+      background: var(--bg);
+      color: var(--gold);
+      font-family: 'IM Fell English', Georgia, serif;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+      padding-top: env(safe-area-inset-top);
+      padding-right: env(safe-area-inset-right);
+      padding-bottom: env(safe-area-inset-bottom);
+      padding-left: env(safe-area-inset-left);
+    }
+
+    /* ── Header ─────────────────────────────────────────── */
+    header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 14px;
+      background: var(--bg3);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+      height: 46px;
+    }
+
+    .title {
+      font-size: 16px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--gold);
+      flex-shrink: 0;
+    }
+
+    .atmo-tabs { display: flex; gap: 5px; }
+    .atmo-tab {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      color: var(--gold-dim);
+      font-family: inherit;
+      font-size: 14px;
+      padding: 5px 16px;
+      border-radius: 3px;
+      cursor: pointer;
+      min-height: 34px;
+    }
+    .atmo-tab.active {
+      background: linear-gradient(to bottom, #d4a832, #7a5510);
+      color: #180c02;
+      border-color: #5a3c08;
+    }
+
+    .vol-wrap {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      margin-left: auto;
+    }
+    .vol-icon { font-size: 15px; color: var(--gold-dim); }
+    .vol-slider {
+      -webkit-appearance: none; appearance: none;
+      width: 100px; height: 5px;
+      background: var(--border); border-radius: 3px; outline: none;
+    }
+    .vol-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 20px; height: 20px; border-radius: 50%;
+      background: linear-gradient(to bottom, #d4a832, #7a5510);
+      border: 1px solid #5a3c08; cursor: pointer;
+    }
+    .vol-pct { font-size: 12px; color: var(--gold-dim); min-width: 36px; text-align: right; }
+
+    /* ── Main 2-col ─────────────────────────────────────── */
+    .main {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    /* ── Left: transport + sim + status ─────────────────── */
+    .left-panel {
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+      border-right: 1px solid var(--border);
+      overflow: hidden;
+    }
+
+    .transport-row { display: flex; gap: 6px; }
+
+    .t-btn {
+      background: linear-gradient(to bottom, #d4a832 0%, #a87820 55%, #7a5510 100%);
+      border: 1px solid #5a3c08;
+      border-radius: 3px;
+      color: #180c02;
+      font-size: 18px;
+      width: 46px; height: 46px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,220,80,0.25);
+    }
+    .t-btn.active {
+      background: linear-gradient(to bottom, #b87818, #e0b030);
+      box-shadow: inset 0 3px 6px rgba(0,0,0,0.5);
+    }
+
+    .sim-btn {
+      background: linear-gradient(to bottom, #1a4a1a, #081a08);
+      border: 1px solid #285828;
+      color: var(--green-hi);
+      font-family: inherit;
+      font-size: 15px;
+      letter-spacing: 0.12em;
+      padding: 0;
+      height: 46px;
+      border-radius: 3px;
+      cursor: pointer;
+      width: 100%;
+      flex-shrink: 0;
+    }
+    .sim-btn.active {
+      background: linear-gradient(to bottom, #0e2e0e, #2a6a2a);
+      box-shadow: 0 0 14px rgba(80,180,80,0.2);
+    }
+
+    .sim-status { flex: 1; overflow: hidden; }
+    .sim-label  { font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold-dim); margin-bottom: 3px; }
+    .sim-value  { font-size: 15px; color: var(--green-hi); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sim-sub    { font-size: 12px; color: var(--green); margin-top: 2px; }
+    .sim-time   { font-size: 12px; color: var(--gold-dim); margin-top: 2px; font-variant-numeric: tabular-nums; }
+
+    /* ── Right: LEDs ─────────────────────────────────────── */
+    .right-panel {
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .panel-label {
+      font-size: 10px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--gold-dim);
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 5px;
+      margin-bottom: 8px;
+    }
+
+    .led-group { margin-bottom: 10px; }
+    .led-group:last-child { margin-bottom: 0; }
+
+    .led-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .led-name {
+      font-size: 13px;
+      color: var(--gold);
+      width: 52px;
+      flex-shrink: 0;
+    }
+
+    .led-fx {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 5px 0 0 62px;
+      opacity: 0.28;
+      transition: opacity 0.15s;
+      pointer-events: none;
+    }
+    .led-fx.active { opacity: 1; pointer-events: auto; }
+    .fx-icon { font-size: 12px; color: var(--gold-dim); flex-shrink: 0; }
+    .fx-slider {
+      -webkit-appearance: none; appearance: none;
+      flex: 1; height: 4px;
+      background: var(--border); border-radius: 2px; outline: none;
+    }
+    .fx-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 18px; height: 18px; border-radius: 50%;
+      background: linear-gradient(to bottom, #d4a832, #7a5510);
+      border: 1px solid #5a3c08; cursor: pointer;
+    }
+    .fx-val { font-size: 11px; color: var(--gold-dim); min-width: 26px; text-align: right; flex-shrink: 0; }
+
+    /* ── LED preview dot ─────────────────────────────────── */
+    .led-dot {
+      width: 18px; height: 18px; border-radius: 50%;
+      flex-shrink: 0;
+      background: #1a0c04;
+      border: 1px solid #2a1608;
+      transition: background 0.3s, box-shadow 0.3s;
+    }
+    .led-dot.on {
+      background: #ffe8a0;
+      box-shadow: 0 0 6px 3px rgba(255, 220, 100, 0.55);
+    }
+    .led-dot.on.fire {
+      background: #ff9020;
+      box-shadow: 0 0 8px 3px rgba(255, 120, 10, 0.6);
+    }
+    .led-dot.flicker {
+      animation: led-flicker var(--fdur, 1s) ease-in-out infinite;
+    }
+    @keyframes led-flicker {
+      0%   { opacity: 1; }
+      8%   { opacity: var(--flo, 0.6); }
+      15%  { opacity: 0.95; }
+      23%  { opacity: var(--flo, 0.5); }
+      31%  { opacity: 1; }
+      40%  { opacity: 0.9; }
+      48%  { opacity: var(--flo, 0.65); }
+      57%  { opacity: 1; }
+      66%  { opacity: var(--flo, 0.7); }
+      76%  { opacity: 0.95; }
+      84%  { opacity: var(--flo, 0.5); }
+      93%  { opacity: 1; }
+      100% { opacity: var(--flo, 0.8); }
+    }
+
+    /* iOS-style toggle */
+    .toggle-sw {
+      position: relative;
+      width: 48px; height: 28px;
+      flex-shrink: 0;
+      cursor: pointer;
+    }
+    .toggle-sw input { opacity: 0; width: 0; height: 0; position: absolute; }
+    .toggle-track {
+      position: absolute;
+      inset: 0;
+      background: #1a0e06;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      transition: background 0.2s, border-color 0.2s;
+    }
+    .toggle-track::before {
+      content: '';
+      position: absolute;
+      width: 22px; height: 22px;
+      left: 2px; top: 2px;
+      background: #4a3010;
+      border-radius: 50%;
+      transition: transform 0.2s, background 0.2s;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.5);
+    }
+    .toggle-sw input:checked + .toggle-track {
+      background: #c8932a;
+      border-color: #a87020;
+    }
+    .toggle-sw input:checked + .toggle-track::before {
+      transform: translateX(20px);
+      background: #180c02;
+    }
+
+    .flicker-btn {
+      flex: 1;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      color: var(--gold-dim);
+      font-family: inherit;
+      font-size: 12px;
+      padding: 6px 10px;
+      border-radius: 3px;
+      cursor: pointer;
+      white-space: nowrap;
+      min-height: 32px;
+      text-align: center;
+    }
+    .flicker-btn.active {
+      background: #2a1406;
+      border-color: var(--gold-mid);
+      color: var(--gold);
+    }
+
+    .led-test-btn {
+      width: 100%;
+      margin-top: 12px;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      color: var(--gold-dim);
+      font-family: inherit;
+      font-size: 13px;
+      letter-spacing: 0.1em;
+      padding: 9px;
+      border-radius: 3px;
+      cursor: pointer;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .led-test-btn.running {
+      border-color: var(--gold-mid);
+      color: var(--gold);
+      background: #1a0e04;
+    }
+    .led-test-na {
+      width: 100%;
+      margin-top: 12px;
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      color: var(--gold-dim);
+      opacity: 0.4;
+      text-align: center;
+      padding: 4px 0;
+    }
+
+    /* ── Scene strip ─────────────────────────────────────── */
+    .scene-strip {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 7px 14px;
+      background: var(--bg3);
+      border-top: 1px solid var(--border);
+      overflow-x: auto;
+      flex-shrink: 0;
+      -webkit-overflow-scrolling: touch;
+    }
+    .scene-strip::-webkit-scrollbar { display: none; }
+    .scene-strip-label {
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--gold-dim);
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
+    .scene-btn {
+      background: var(--bg2);
+      border: 1px solid #3a2808;
+      color: var(--gold-mid);
+      font-family: inherit;
+      font-size: 12px;
+      padding: 7px 13px;
+      border-radius: 3px;
+      cursor: pointer;
+      white-space: nowrap;
+      flex-shrink: 0;
+      min-height: 34px;
+    }
+    .scene-btn:active { background: #261a08; color: var(--gold); }
+    .scene-btn.firing { border-color: var(--green); color: var(--green-hi); }
+  </style>
+</head>
+<body>
+
+<header>
+  <span class="title">Signalbox</span>
+  <div class="atmo-tabs">
+    <button class="atmo-tab active" id="tab-day"   onclick="switchAtmo('day')">☀ Day</button>
+    <button class="atmo-tab"        id="tab-night" onclick="switchAtmo('night')">🌙 Night</button>
+  </div>
+  <div class="vol-wrap">
+    <span class="vol-icon">🔊</span>
+    <input class="vol-slider" id="vol-slider" type="range" min="0" max="100" value="100"
+           oninput="onVolInput(this.value)">
+    <span class="vol-pct" id="vol-pct">100%</span>
+  </div>
+</header>
+
+<div class="main">
+
+  <!-- Left: transport + simulate + status -->
+  <div class="left-panel">
+    <div class="transport-row">
+      <button class="t-btn" id="btn-play"  onclick="tPlay()"  title="Play loops">▶</button>
+      <button class="t-btn" id="btn-pause" onclick="tPause()" title="Pause">⏸</button>
+      <button class="t-btn" id="btn-stop"  onclick="tStop()"  title="Stop all">⏹</button>
+    </div>
+
+    <button class="sim-btn" id="sim-btn" onclick="toggleSim()">⟳ SIMULATE</button>
+
+    <div class="sim-status">
+      <div class="sim-label">Status</div>
+      <div class="sim-value" id="sim-value">Stopped</div>
+      <div class="sim-sub"   id="sim-sub"></div>
+      <div class="sim-time"  id="sim-time"></div>
+    </div>
+  </div>
+
+  <!-- Right: LEDs -->
+  <div class="right-panel">
+    <div class="panel-label">Lighting</div>
+
+    <div class="led-group">
+      <div class="led-row">
+        <div class="led-dot" id="dot-ceiling_upper"></div>
+        <span class="led-name">Upper</span>
+        <label class="toggle-sw">
+          <input type="checkbox" id="led-ceiling_upper" onchange="onLedToggle('ceiling_upper',this.checked)">
+          <span class="toggle-track"></span>
+        </label>
+        <button class="flicker-btn" id="flk-ceiling_upper" onclick="toggleFlicker('ceiling_upper')">~ Flicker</button>
+      </div>
+      <div class="led-fx" id="fx-ceiling_upper">
+        <span class="fx-icon" title="Speed">⚡</span>
+        <input class="fx-slider" id="fspd-ceiling_upper" type="range" min="1" max="5" step="0.5" value="1.5"
+               oninput="onFlickerParam('ceiling_upper','flicker_speed',+this.value);document.getElementById('fspd-val-ceiling_upper').textContent=this.value">
+        <span class="fx-val" id="fspd-val-ceiling_upper">1.5</span>
+        <span class="fx-icon" title="Depth">◑</span>
+        <input class="fx-slider" id="fdep-ceiling_upper" type="range" min="10" max="90" step="5" value="20"
+               oninput="onFlickerParam('ceiling_upper','flicker_depth',+this.value);document.getElementById('fdep-val-ceiling_upper').textContent=this.value+'%'">
+        <span class="fx-val" id="fdep-val-ceiling_upper">20%</span>
+      </div>
+    </div>
+
+    <div class="led-group">
+      <div class="led-row">
+        <div class="led-dot" id="dot-ceiling_lower"></div>
+        <span class="led-name">Lower</span>
+        <label class="toggle-sw">
+          <input type="checkbox" id="led-ceiling_lower" onchange="onLedToggle('ceiling_lower',this.checked)">
+          <span class="toggle-track"></span>
+        </label>
+        <button class="flicker-btn" id="flk-ceiling_lower" onclick="toggleFlicker('ceiling_lower')">~ Flicker</button>
+      </div>
+      <div class="led-fx" id="fx-ceiling_lower">
+        <span class="fx-icon" title="Speed">⚡</span>
+        <input class="fx-slider" id="fspd-ceiling_lower" type="range" min="1" max="5" step="0.5" value="1.5"
+               oninput="onFlickerParam('ceiling_lower','flicker_speed',+this.value);document.getElementById('fspd-val-ceiling_lower').textContent=this.value">
+        <span class="fx-val" id="fspd-val-ceiling_lower">1.5</span>
+        <span class="fx-icon" title="Depth">◑</span>
+        <input class="fx-slider" id="fdep-ceiling_lower" type="range" min="10" max="90" step="5" value="20"
+               oninput="onFlickerParam('ceiling_lower','flicker_depth',+this.value);document.getElementById('fdep-val-ceiling_lower').textContent=this.value+'%'">
+        <span class="fx-val" id="fdep-val-ceiling_lower">20%</span>
+      </div>
+    </div>
+
+    <div class="led-group">
+      <div class="led-row">
+        <div class="led-dot fire" id="dot-stove"></div>
+        <span class="led-name">Stove</span>
+        <label class="toggle-sw">
+          <input type="checkbox" id="led-stove" onchange="onLedToggle('stove',this.checked)">
+          <span class="toggle-track"></span>
+        </label>
+        <button class="flicker-btn" id="flk-stove" onclick="toggleFlicker('stove')">~ Fire</button>
+      </div>
+      <div class="led-fx" id="fx-stove">
+        <span class="fx-icon" title="Speed">⚡</span>
+        <input class="fx-slider" id="fspd-stove" type="range" min="1" max="5" step="0.5" value="4.5"
+               oninput="onFlickerParam('stove','flicker_speed',+this.value);document.getElementById('fspd-val-stove').textContent=this.value">
+        <span class="fx-val" id="fspd-val-stove">4.5</span>
+        <span class="fx-icon" title="Depth">◑</span>
+        <input class="fx-slider" id="fdep-stove" type="range" min="10" max="90" step="5" value="75"
+               oninput="onFlickerParam('stove','flicker_depth',+this.value);document.getElementById('fdep-val-stove').textContent=this.value+'%'">
+        <span class="fx-val" id="fdep-val-stove">75%</span>
+      </div>
+    </div>
+
+    <div class="led-group">
+      <div class="led-row">
+        <div class="led-dot" id="dot-exterior"></div>
+        <span class="led-name">Outside</span>
+        <label class="toggle-sw">
+          <input type="checkbox" id="led-exterior" onchange="onLedToggle('exterior',this.checked)">
+          <span class="toggle-track"></span>
+        </label>
+        <button class="flicker-btn" id="flk-exterior" onclick="toggleFlicker('exterior')">~ Flicker</button>
+      </div>
+      <div class="led-fx" id="fx-exterior">
+        <span class="fx-icon" title="Speed">⚡</span>
+        <input class="fx-slider" id="fspd-exterior" type="range" min="1" max="5" step="0.5" value="2"
+               oninput="onFlickerParam('exterior','flicker_speed',+this.value);document.getElementById('fspd-val-exterior').textContent=this.value">
+        <span class="fx-val" id="fspd-val-exterior">2</span>
+        <span class="fx-icon" title="Depth">◑</span>
+        <input class="fx-slider" id="fdep-exterior" type="range" min="10" max="90" step="5" value="25"
+               oninput="onFlickerParam('exterior','flicker_depth',+this.value);document.getElementById('fdep-val-exterior').textContent=this.value+'%'">
+        <span class="fx-val" id="fdep-val-exterior">25%</span>
+      </div>
+    </div>
+
+    <button class="led-test-btn" id="led-test-btn" onclick="toggleLedTest()">⚡ LED Test</button>
+    <div class="led-test-na" id="led-test-na" style="display:none">LED test — Pi only</div>
+
+  </div>
+
+</div>
+
+<!-- Scene strip -->
+<div class="scene-strip" id="scene-strip">
+  <span class="scene-strip-label">Fire →</span>
+</div>
+
+<script>
+let cfg         = null;
+let atmo        = 'day';
+let tState      = 'stopped';
+let simRunning  = false;
+let simPoll     = null;
+let volDebounce = null;
+let ledDebounce = {};
+
+// ── Boot ─────────────────────────────────────────────────────
+
+async function init() {
+  const [cfgRes, volRes] = await Promise.all([
+    fetch('/api/config'),
+    fetch('/api/volume')
+  ]);
+  cfg = await cfgRes.json();
+  const vol = await volRes.json();
+  applyVolUI(Math.round(vol.volume * 100));
+  renderLeds();
+  renderScenes();
+  startSimPoll();
+}
+
+// ── Atmosphere ───────────────────────────────────────────────
+
+function switchAtmo(name) {
+  atmo = name;
+  document.querySelectorAll('.atmo-tab').forEach(b =>
+    b.classList.toggle('active', b.id === 'tab-' + name));
+  renderLeds();
+  renderScenes();
+}
+
+// ── Volume ───────────────────────────────────────────────────
+
+function applyVolUI(pct) {
+  document.getElementById('vol-slider').value = pct;
+  document.getElementById('vol-pct').textContent = pct + '%';
+}
+
+function onVolInput(pct) {
+  document.getElementById('vol-pct').textContent = pct + '%';
+  clearTimeout(volDebounce);
+  volDebounce = setTimeout(() =>
+    fetch('/api/volume', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({volume: pct / 100})
+    }), 80);
+}
+
+// ── Transport ────────────────────────────────────────────────
+
+async function tPlay() {
+  if (tState === 'paused') {
+    await fetch('/api/transport/unpause', {method: 'POST'});
+  } else {
+    await fetch(`/api/transport/play/${atmo}`, {method: 'POST'});
+  }
+  tState = 'playing';
+  updateTransportUI();
+}
+
+async function tPause() {
+  if (tState !== 'playing') return;
+  await fetch('/api/transport/pause', {method: 'POST'});
+  tState = 'paused';
+  updateTransportUI();
+}
+
+async function tStop() {
+  await fetch('/api/stop_all', {method: 'POST'});
+  tState     = 'stopped';
+  simRunning = false;
+  updateTransportUI();
+  updateSimUI('idle', null, 0, 0, 0, 0);
+}
+
+function updateTransportUI() {
+  document.getElementById('btn-play') .classList.toggle('active', tState === 'playing');
+  document.getElementById('btn-pause').classList.toggle('active', tState === 'paused');
+}
+
+// ── Simulate ─────────────────────────────────────────────────
+
+async function toggleSim() {
+  if (simRunning) {
+    await fetch('/api/simulate/stop', {method: 'POST'});
+    simRunning = false;
+    tState     = 'stopped';
+  } else {
+    await fetch(`/api/simulate/${atmo}`, {method: 'POST'});
+    simRunning = true;
+    tState     = 'playing';
+  }
+  updateTransportUI();
+  updateSimBtn();
+}
+
+function updateSimBtn() {
+  const btn = document.getElementById('sim-btn');
+  btn.classList.toggle('active', simRunning);
+  btn.textContent = simRunning ? '⏹ STOP SIM' : '⟳ SIMULATE';
+}
+
+function updateSimUI(mode, sceneName, nextIn, remaining, elapsed, total) {
+  const valEl  = document.getElementById('sim-value');
+  const subEl  = document.getElementById('sim-sub');
+  const timeEl = document.getElementById('sim-time');
+  if (mode === 'waiting' && sceneName) {
+    valEl.textContent  = sceneName;
+    const rem = remaining > 0 ? ` · ${remaining} left` : ' · last in cycle';
+    subEl.textContent  = 'Next in ' + fmtTime(nextIn) + rem;
+    timeEl.textContent = '';
+  } else if (mode === 'playing' && sceneName) {
+    valEl.textContent  = '▶ ' + sceneName;
+    subEl.textContent  = total > 0 ? fmtTime(elapsed) + ' / ' + fmtTime(total) : fmtTime(elapsed);
+    timeEl.textContent = total > 0 ? 'Ends in ' + fmtTime(Math.max(0, total - elapsed)) : '';
+  } else {
+    valEl.textContent  = simRunning ? 'Starting…' : 'Stopped';
+    subEl.textContent  = '';
+    timeEl.textContent = '';
+  }
+}
+
+function startSimPoll() {
+  simPoll = setInterval(async () => {
+    const [s, p] = await Promise.all([
+      fetch('/api/simulate/status').then(r => r.json()),
+      fetch('/api/preview/status').then(r => r.json())
+    ]);
+    if (!s.running && simRunning) {
+      simRunning = false;
+      tState     = 'stopped';
+      updateTransportUI();
+      updateSimBtn();
+    }
+    updateSimUI(s.mode, s.scene_name, s.next_in, s.remaining, p.elapsed || 0, p.total || 0);
+  }, 600);
+}
+
+function fmtTime(s) {
+  s = Math.round(s);
+  return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+}
+
+// ── LEDs ─────────────────────────────────────────────────────
+
+function renderLeds() {
+  if (!cfg) return;
+  const leds = cfg.atmospheres?.[atmo]?.leds || {};
+  for (const ch of ['ceiling_upper', 'ceiling_lower', 'stove', 'exterior']) {
+    const led = leds[ch] || {enabled: false, flicker: false, flicker_speed: 2, flicker_depth: 40};
+    const flkOn = !!led.flicker;
+    document.getElementById('led-'      + ch).checked = !!led.enabled;
+    document.getElementById('flk-'      + ch).classList.toggle('active', flkOn);
+    document.getElementById('fx-'       + ch).classList.toggle('active', flkOn);
+    const spd = led.flicker_speed ?? 2;
+    const dep = led.flicker_depth ?? 40;
+    document.getElementById('fspd-'     + ch).value = spd;
+    document.getElementById('fspd-val-' + ch).textContent = spd;
+    document.getElementById('fdep-'     + ch).value = dep;
+    document.getElementById('fdep-val-' + ch).textContent = dep + '%';
+    updateLedDot(ch, led);
+  }
+}
+
+function updateLedDot(channel, led) {
+  if (!led) led = cfg.atmospheres?.[atmo]?.leds?.[channel] || {};
+  const dot  = document.getElementById('dot-' + channel);
+  if (!dot) return;
+  const on   = !!led.enabled;
+  const flk  = on && !!led.flicker;
+  const spd  = led.flicker_speed ?? 2;
+  const dep  = led.flicker_depth ?? 40;
+  dot.classList.toggle('on',      on);
+  dot.classList.toggle('flicker', flk);
+  dot.style.setProperty('--fdur', (2 / spd).toFixed(2) + 's');
+  dot.style.setProperty('--flo',  (1 - dep / 100).toFixed(2));
+}
+
+function onLedToggle(channel, checked) {
+  const led = ensureLed(channel);
+  led.enabled = checked;
+  updateLedDot(channel, led);
+  scheduleLedSave(channel);
+}
+
+function toggleFlicker(channel) {
+  const led = ensureLed(channel);
+  led.flicker = !led.flicker;
+  document.getElementById('flk-' + channel).classList.toggle('active', led.flicker);
+  document.getElementById('fx-'  + channel).classList.toggle('active', led.flicker);
+  updateLedDot(channel, led);
+  scheduleLedSave(channel);
+}
+
+function onFlickerParam(channel, param, val) {
+  const led = ensureLed(channel);
+  led[param] = val;
+  updateLedDot(channel, led);
+  scheduleLedSave(channel);
+}
+
+function ensureLed(channel) {
+  const atmoData = cfg.atmospheres[atmo];
+  atmoData.leds = atmoData.leds || {};
+  atmoData.leds[channel] = atmoData.leds[channel] ||
+    {brightness: 0, flicker: false, flicker_speed: 2, flicker_depth: 40};
+  return atmoData.leds[channel];
+}
+
+function scheduleLedSave(channel) {
+  clearTimeout(ledDebounce[channel]);
+  ledDebounce[channel] = setTimeout(() => {
+    fetch('/api/led', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        atmosphere: atmo,
+        channel,
+        led: cfg.atmospheres[atmo].leds[channel]
+      })
+    });
+  }, 250);
+}
+
+// ── Scenes ───────────────────────────────────────────────────
+
+function renderScenes() {
+  if (!cfg) return;
+  const strip  = document.getElementById('scene-strip');
+  const scenes = cfg.atmospheres?.[atmo]?.scenes || [];
+  strip.innerHTML = `<span class="scene-strip-label">Fire →</span>`;
+  for (const scene of scenes) {
+    const btn = document.createElement('button');
+    btn.className   = 'scene-btn';
+    btn.textContent = scene.name || scene.id;
+    btn.onclick     = () => fireScene(scene.id, btn);
+    strip.appendChild(btn);
+  }
+}
+
+async function fireScene(sceneId, btn) {
+  btn.classList.add('firing');
+  await fetch(`/api/preview/${atmo}/${sceneId}`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({start_at: 0})
+  });
+  setTimeout(() => btn.classList.remove('firing'), 1200);
+}
+
+// ── LED Test ─────────────────────────────────────────────────
+
+let ledTestRunning = false;
+let ledTestPoll    = null;
+
+async function toggleLedTest() {
+  if (ledTestRunning) {
+    await fetch('/api/led/test/stop', {method: 'POST'});
+    ledTestRunning = false;
+    clearInterval(ledTestPoll);
+    setLedTestBtn(false, '');
+  } else {
+    const res = await fetch('/api/led/test', {method: 'POST'});
+    if (!res.ok) {
+      // GPIO not available (running on Mac)
+      document.getElementById('led-test-btn').style.display = 'none';
+      document.getElementById('led-test-na').style.display  = 'block';
+      return;
+    }
+    ledTestRunning = true;
+    setLedTestBtn(true, 'Starting…');
+    ledTestPoll = setInterval(async () => {
+      const s = await fetch('/api/led/test/status').then(r => r.json());
+      if (!s.running) {
+        ledTestRunning = false;
+        clearInterval(ledTestPoll);
+        setLedTestBtn(false, '');
+      } else {
+        setLedTestBtn(true, s.step);
+      }
+    }, 400);
+  }
+}
+
+function setLedTestBtn(running, step) {
+  const btn = document.getElementById('led-test-btn');
+  btn.classList.toggle('running', running);
+  btn.textContent = running ? ('⏹ ' + (step || 'Testing…')) : '⚡ LED Test';
+}
+
+init();
+</script>
+</body>
+</html>

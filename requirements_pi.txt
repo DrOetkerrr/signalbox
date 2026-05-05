@@ -1,0 +1,11 @@
+# Install on Pi with:
+#   pip3 install -r requirements_pi.txt
+
+flask
+RPi.GPIO
+
+# Audio — install when ready for sound (after LED test passes)
+# pygame
+# pydub
+# numpy
+# pedalboard        ← optional, only needed for reverb effects

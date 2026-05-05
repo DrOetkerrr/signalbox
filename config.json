@@ -1,0 +1,857 @@
+{
+  "atmospheres": {
+    "day": {
+      "leds": {
+        "ceiling_lower": {
+          "brightness": 70,
+          "enabled": false,
+          "flicker": false,
+          "flicker_depth": 20,
+          "flicker_speed": 1.5
+        },
+        "ceiling_upper": {
+          "brightness": 70,
+          "enabled": false,
+          "flicker": true,
+          "flicker_depth": 20,
+          "flicker_speed": 1.5
+        },
+        "exterior": {
+          "brightness": 0,
+          "enabled": false,
+          "flicker": false,
+          "flicker_depth": 40,
+          "flicker_speed": 2
+        },
+        "interior": {
+          "brightness": 0,
+          "flicker": false,
+          "flicker_depth": 40,
+          "flicker_speed": 2
+        },
+        "stove": {
+          "brightness": 0.77,
+          "enabled": true,
+          "flicker": true,
+          "flicker_depth": 40,
+          "flicker_speed": 2.5
+        }
+      },
+      "loops": [
+        {
+          "id": "id_kzs0jcz",
+          "sound": "ambience",
+          "volume": 1
+        }
+      ],
+      "scenes": [
+        {
+          "events": [
+            {
+              "duration": 30,
+              "fade_out": 2,
+              "filter": 300,
+              "reverb_wet": 0.17,
+              "sound": "radio_whistle_while_you_work",
+              "start": 63.5,
+              "volume": 0.12
+            }
+          ],
+          "id": "scene_1",
+          "max_interval": 120,
+          "min_interval": 0,
+          "name": "Morning brew"
+        },
+        {
+          "events": [
+            {
+              "filter": 1500,
+              "pan": 0.79,
+              "reverb_room": 0.27,
+              "reverb_wet": 0.13,
+              "sound": "2024_is_not_passed_yet",
+              "start": 19.5,
+              "volume": 0.45
+            }
+          ],
+          "id": "id_6cxf0ze",
+          "max_interval": 60,
+          "min_interval": 0,
+          "name": "Telephpone: incoming call: 2024 not passed yet."
+        },
+        {
+          "events": [
+            {
+              "reverb_room": 0.32,
+              "reverb_wet": 0.25,
+              "sound": "fiona_does_not_fancy_a_drink",
+              "start": 12.5,
+              "volume": 0.27
+            }
+          ],
+          "id": "id_42inzb6",
+          "max_interval": 60,
+          "min_interval": 0,
+          "name": "Fiona is not fancying him"
+        },
+        {
+          "events": [
+            {
+              "sound": "sf_train_bell_signals",
+              "start": 0.5,
+              "volume": 0.65
+            },
+            {
+              "sound": "sf_switchting",
+              "start": 5,
+              "volume": 0.55,
+              "reverb_wet": 0.12
+            },
+            {
+              "sound": "sf_switch",
+              "start": 6.5,
+              "volume": 0.45,
+              "reverb_wet": 0.12
+            },
+            {
+              "sound": "sf_train_bell_signals",
+              "start": 11,
+              "volume": 0.55
+            },
+            {
+              "sound": "sf_blanche_steam_whistle",
+              "start": 18,
+              "volume": 0.5,
+              "pan": 0.7,
+              "reverb_wet": 0.22
+            }
+          ],
+          "id": "id_2ld3zhb",
+          "max_interval": 60,
+          "min_interval": 0,
+          "name": "Switching"
+        },
+        {
+          "events": [
+            {
+              "filter": 2200,
+              "reverb_room": 0.23,
+              "reverb_wet": 0.3,
+              "sound": "jimmy_peter_train_is_delayed_take_a_brew",
+              "start": 20,
+              "volume": 0.38
+            },
+            {
+              "reverb_room": 0.15,
+              "reverb_wet": 0.07,
+              "sound": "jimmy_hey_there_how_are_ya_2",
+              "start": 58.5,
+              "volume": 0.32
+            }
+          ],
+          "id": "id_sttbc4n",
+          "max_interval": 60,
+          "min_interval": 0,
+          "name": "Train passing bye"
+        },
+        {
+          "events": [
+            {
+              "duration": 140,
+              "fade_out": 3.5,
+              "pan": 0.82,
+              "reverb_wet": 0.42,
+              "sound": "radio_feeling_like_a_dream",
+              "start": 6.5,
+              "volume": 0.15
+            },
+            {
+              "reverb_room": 0.4,
+              "reverb_wet": 0.14,
+              "sound": "jimmy_hey_there_how_are_ya_2",
+              "start": 83.5,
+              "volume": 0.49
+            },
+            {
+              "sound": "sf_train_whisltle_and_passing_by",
+              "start": 12.5,
+              "volume": 1,
+              "fade_in": 4.5,
+              "fade_out": 3
+            },
+            {
+              "sound": "sf_switch",
+              "start": 0.5,
+              "volume": 0.31
+            },
+            {
+              "sound": "sf_radio_tuning",
+              "start": 1,
+              "volume": 0.65,
+              "pan": -0.69,
+              "duration": 6
+            }
+          ],
+          "id": "id_g9hnk1z",
+          "max_interval": 60,
+          "min_interval": 0,
+          "name": "Train passing "
+        },
+        {
+          "events": [
+            {
+              "duration": 100,
+              "fade_out": null,
+              "pan": 0.78,
+              "reverb_room": 0.24,
+              "reverb_wet": 0.21,
+              "sound": "radio_they_say",
+              "start": 8.5,
+              "volume": 0.08
+            },
+            {
+              "reverb_wet": 0.13,
+              "sound": "jimmy_peter_train_is_delayed_take_a_brew",
+              "start": 43.5,
+              "volume": 0.49
+            },
+            {
+              "sound": "sf_sheep_sound",
+              "start": 5.5,
+              "volume": 0.14,
+              "pan": 0.84,
+              "reverb_wet": 0.15
+            },
+            {
+              "sound": "sf_switch",
+              "start": 8,
+              "volume": 0.32,
+              "reverb_wet": 0.14
+            },
+            {
+              "sound": "sf_bell_signal",
+              "start": 30,
+              "volume": 0.37
+            },
+            {
+              "sound": "sf_rotary_phone_dialing",
+              "start": 38,
+              "volume": 0.98,
+              "duration": 5
+            },
+            {
+              "sound": "sf_bell_signal",
+              "start": 34.5,
+              "volume": 1
+            }
+          ],
+          "id": "id_mb329ee",
+          "max_interval": 60,
+          "min_interval": 0,
+          "name": "Sheep and train delays."
+        },
+        {
+          "events": [
+            {
+              "reverb_wet": 0.24,
+              "sound": "jimmy_mum_is_calling",
+              "start": 6,
+              "volume": 0.18
+            },
+            {
+              "sound": "1970_telephone_ring_1_4_seconds_cycle_nl_1",
+              "start": 0,
+              "volume": 0.32
+            },
+            {
+              "sound": "1970_telephone_ring_1_4_seconds_cycle_nl_1",
+              "start": 2,
+              "volume": 0.18
+            },
+            {
+              "sound": "sf_switch",
+              "start": 4,
+              "volume": 0.15
+            }
+          ],
+          "id": "id_zejalqm",
+          "max_interval": 60,
+          "min_interval": 0,
+          "name": "Mum's calling"
+        },
+        {
+          "events": [
+            {
+              "pan": 0.82,
+              "reverb_room": 0.35,
+              "reverb_wet": 0.29,
+              "sound": "jimmy_fiona_and_the_dance",
+              "start": 7.5,
+              "volume": 0.44
+            },
+            {
+              "duration": 40,
+              "fade_in": 2,
+              "pan": -0.88,
+              "sound": "radio_shine_on_harvest_moon",
+              "start": 0,
+              "volume": 0.09
+            },
+            {
+              "duration": 20,
+              "fade_out": 4,
+              "pan": -0.88,
+              "sound": "radio_i_double_dare_you",
+              "start": 42,
+              "volume": 0.1
+            }
+          ],
+          "id": "id_t670ikw",
+          "max_interval": 120,
+          "min_interval": 0,
+          "name": "Fiona still not interested"
+        },
+        {
+          "events": [
+            {
+              "filter": 1300,
+              "pan": -0.49,
+              "reverb_room": 0.18,
+              "reverb_wet": 0.14,
+              "sound": "juimmy_complaint_to_the_office",
+              "start": 11.5,
+              "volume": 0.33
+            }
+          ],
+          "id": "id_7o4jy0y",
+          "max_interval": 60,
+          "min_interval": 0,
+          "name": "Complaint to the office"
+        },
+        {
+          "events": [
+            {
+              "reverb_wet": 0.14,
+              "sound": "jimmy_coal_is_out",
+              "start": 8.5,
+              "volume": 0.21
+            }
+          ],
+          "id": "id_icaq2hc",
+          "max_interval": 2400,
+          "min_interval": 900,
+          "name": "We are out of coal"
+        },
+        {
+          "events": [
+            {
+              "sound": "sf_tea_kettle_whistle",
+              "start": 2,
+              "volume": 0.5,
+              "reverb_wet": 0.14
+            },
+            {
+              "sound": "sf_tea_filling_pot",
+              "start": 7.5,
+              "volume": 0.42,
+              "reverb_wet": 0.16
+            },
+            {
+              "sound": "sf_tea_pouring",
+              "start": 15,
+              "volume": 0.45,
+              "reverb_wet": 0.14
+            },
+            {
+              "sound": "sf_man_whistling",
+              "start": 0,
+              "volume": 0.12,
+              "pan": -0.3,
+              "reverb_wet": 0.18,
+              "duration": 14
+            }
+          ],
+          "id": "id_14efxyl",
+          "max_interval": 60,
+          "min_interval": 0,
+          "name": "Tea ceremony"
+        },
+        {
+          "events": [
+            {
+              "reverb_wet": 0.21,
+              "sound": "jimmy_fiona_says_yes",
+              "start": 7.5,
+              "volume": 0.41
+            },
+            {
+              "duration": 110,
+              "fade_in": 5.5,
+              "fade_out": 2,
+              "pan": 0.94,
+              "reverb_room": 0.31,
+              "reverb_wet": 0.14,
+              "sound": "radio_glen_island_hop",
+              "start": 17,
+              "volume": 0.04
+            }
+          ],
+          "id": "id_k8kz3rg",
+          "max_interval": 60,
+          "min_interval": 0,
+          "name": "FIona drops by"
+        }
+      ]
+    },
+    "night": {
+      "leds": {
+        "ceiling_lower": {
+          "brightness": 70,
+          "enabled": true,
+          "flicker": false,
+          "flicker_depth": 20,
+          "flicker_speed": 1.5
+        },
+        "ceiling_upper": {
+          "brightness": 70,
+          "enabled": true,
+          "flicker": false,
+          "flicker_depth": 20,
+          "flicker_speed": 1.5
+        },
+        "exterior": {
+          "brightness": 0,
+          "flicker": false,
+          "flicker_depth": 40,
+          "flicker_speed": 2
+        },
+        "interior": {
+          "brightness": 0,
+          "flicker": false,
+          "flicker_depth": 40,
+          "flicker_speed": 2
+        },
+        "stove": {
+          "brightness": 0,
+          "flicker": false,
+          "flicker_depth": 40,
+          "flicker_speed": 2
+        }
+      },
+      "loops": [
+        {
+          "id": "loop_2",
+          "sound": "ambient_night",
+          "volume": 1
+        }
+      ],
+      "scenes": [
+        {
+          "events": [
+            {
+              "sound": "sf_train_bell_signals",
+              "start": 0.5,
+              "volume": 0.55
+            },
+            {
+              "sound": "sf_blanche_steam_whistle",
+              "start": 7,
+              "volume": 0.65,
+              "pan": -0.65,
+              "reverb_wet": 0.28
+            },
+            {
+              "sound": "sf_steam_train_passing",
+              "start": 11,
+              "volume": 0.55,
+              "fade_in": 3,
+              "fade_out": 4,
+              "reverb_wet": 0.2
+            },
+            {
+              "sound": "sf_train_bell_signals",
+              "start": 32,
+              "volume": 0.45
+            }
+          ],
+          "id": "id_nt1gx4z",
+          "max_interval": 480,
+          "min_interval": 120,
+          "name": "Night goods train"
+        },
+        {
+          "events": [
+            {
+              "sound": "sf_dog_barking",
+              "start": 3,
+              "volume": 0.18,
+              "pan": 0.78,
+              "reverb_wet": 0.38
+            },
+            {
+              "sound": "sf_man_whistling",
+              "start": 9,
+              "volume": 0.11,
+              "pan": -0.45,
+              "reverb_wet": 0.32
+            },
+            {
+              "sound": "sf_station_whistle_long",
+              "start": 22,
+              "volume": 0.25,
+              "reverb_wet": 0.35,
+              "pan": 0.5
+            }
+          ],
+          "id": "id_nt2rx8k",
+          "max_interval": 600,
+          "min_interval": 180,
+          "name": "Quiet night"
+        },
+        {
+          "events": [
+            {
+              "sound": "sf_cool_train_passing",
+              "start": 5,
+              "volume": 0.6,
+              "fade_in": 4,
+              "fade_out": 5,
+              "reverb_wet": 0.18
+            },
+            {
+              "sound": "sf_train_whistle_3_2",
+              "start": 2,
+              "volume": 0.55,
+              "pan": -0.5,
+              "reverb_wet": 0.25
+            }
+          ],
+          "id": "id_nt3mw2p",
+          "max_interval": 600,
+          "min_interval": 240,
+          "name": "Night express"
+        }
+      ]
+    }
+  },
+  "sounds": {
+    "1970_telephone_ring_1_4_seconds_cycle_nl_1": {
+      "file": "[SF] telephone-ring-.wav",
+      "filter": 0,
+      "pan": 0,
+      "volume": 1
+    },
+    "2024_is_not_passed_yet": {
+      "file": "[Jimmy] 2024 is not passed yet.mp3",
+      "filter": 0,
+      "pan": 0,
+      "volume": 1
+    },
+    "ambience": {
+      "file": "[loop] ambience.wav",
+      "filter": 0,
+      "pan": 0,
+      "volume": 1
+    },
+    "ambient_night": {
+      "file": "[ambient night].mp3",
+      "filter": 0,
+      "pan": 0,
+      "volume": 1
+    },
+    "fiona_does_not_fancy_a_drink": {
+      "file": "[Jimmy] Fiona does not fancy a drink.mp3",
+      "filter": 0,
+      "pan": 0,
+      "volume": 1
+    },
+    "jimmy_coal_is_out": {
+      "file": "[Jimmy] Coal is out.mp3",
+      "filter": 0,
+      "pan": 0,
+      "volume": 1
+    },
+    "jimmy_fiona_and_the_dance": {
+      "file": "[Jimmy] Fiona and the dance.mp3",
+      "filter": 0,
+      "pan": 0,
+      "volume": 1
+    },
+    "jimmy_fiona_is_not_playing_game_001": {
+      "file": "[jimmy] Fiona is not playing game 001.mp3",
+      "filter": 0,
+      "pan": 0,
+      "volume": 1
+    },
+    "jimmy_fiona_says_yes": {
+      "file": "[Jimmy] Fiona says yes.mp3",
+      "filter": 0,
+      "pan": 0,
+      "volume": 1
+    },
+    "jimmy_hey_there_how_are_ya_2": {
+      "file": "[Jimmy Hey there how are ya 2.mp3",
+      "filter": 0,
+      "pan": 0,
+      "volume": 1
+    },
+    "jimmy_jhey_there_how_are_ya_doing": {
+      "file": "[Jimmy] jhey there, how are ya doing.mp3",
+      "filter": 0,
+      "pan": 0,
+      "volume": 1
+    },
+    "jimmy_mum_is_calling": {
+      "file": "[Jimmy] mum is calling.mp3",
+      "filter": 0,
+      "pan": 0,
+      "volume": 1
+    },
+    "jimmy_peter_train_is_delayed_take_a_brew": {
+      "file": "[Jimmy] Peter, train is delayed, take a brew.mp3",
+      "filter": 0,
+      "pan": 0,
+      "volume": 1
+    },
+    "juimmy_complaint_to_the_office": {
+      "file": "[Juimmy] complaint to the office.mp3",
+      "filter": 0,
+      "pan": 0,
+      "volume": 1
+    },
+    "radio_feeling_like_a_dream": {
+      "file": "[radio] Feeling Like A Dream.mp3",
+      "filter": 0,
+      "pan": 0,
+      "volume": 1
+    },
+    "radio_glen_island_hop": {
+      "file": "[radio] Glen Island Hop.mp3",
+      "filter": 0,
+      "pan": 0,
+      "volume": 1
+    },
+    "radio_i_double_dare_you": {
+      "file": "[radio] I Double Dare You.mp3",
+      "filter": 0,
+      "pan": 0,
+      "volume": 1
+    },
+    "radio_leapin_at_lincoln": {
+      "file": "[radio] Leapin' At Lincoln.mp3",
+      "filter": 0,
+      "pan": 0,
+      "volume": 1
+    },
+    "radio_night_over_shanghai": {
+      "file": "[radio] Night Over Shanghai.mp3",
+      "filter": 0,
+      "pan": 0,
+      "volume": 1
+    },
+    "radio_out_of_nowhere": {
+      "file": "[radio] Out Of Nowhere.mp3",
+      "filter": 0,
+      "pan": 0,
+      "volume": 1
+    },
+    "radio_shine_on_harvest_moon": {
+      "file": "[radio] Shine On Harvest Moon.mp3",
+      "filter": 0,
+      "pan": 0,
+      "volume": 1
+    },
+    "radio_small_fry": {
+      "file": "[radio] Small Fry.mp3",
+      "filter": 0,
+      "pan": 0,
+      "volume": 1
+    },
+    "radio_they_say": {
+      "file": "[radio] They Say.mp3",
+      "filter": 0,
+      "pan": 0,
+      "volume": 1
+    },
+    "radio_whistle_while_you_work": {
+      "file": "[radio] Whistle While You Work.mp3",
+      "filter": 0,
+      "pan": 0,
+      "volume": 1
+    },
+    "radio_you_go_to_my_head": {
+      "file": "[radio] You Go To My Head.mp3",
+      "filter": 0,
+      "pan": 0,
+      "volume": 1
+    },
+    "sf_airplane": {
+      "file": "[SF] airplane.wav",
+      "filter": 0,
+      "pan": 0,
+      "volume": 1
+    },
+    "sf_bell_signal": {
+      "file": "[SF] bell signal.aiff",
+      "filter": 0,
+      "pan": 0,
+      "volume": 1
+    },
+    "sf_blanche_steam_whistle": {
+      "file": "[SF] blanche-steam-whistle.wav",
+      "filter": 0,
+      "pan": 0,
+      "volume": 1
+    },
+    "sf_car_paqssing": {
+      "file": "[SF] car paqssing.mp3",
+      "filter": 0,
+      "pan": 0,
+      "volume": 1
+    },
+    "sf_cool_train_passing": {
+      "file": "[SF] cool train passing.wav",
+      "filter": 0,
+      "pan": 0,
+      "volume": 1
+    },
+    "sf_coughing": {
+      "file": "[SF] coughing.aiff",
+      "filter": 0,
+      "pan": 0,
+      "volume": 1
+    },
+    "sf_dog_barking": {
+      "file": "[SF] dog-barking.wav",
+      "filter": 0,
+      "pan": 0,
+      "volume": 1
+    },
+    "sf_door_open": {
+      "file": "[SF] door open.wav",
+      "filter": 0,
+      "pan": 0,
+      "volume": 1
+    },
+    "sf_double_cough": {
+      "file": "[SF] double-cough.wav",
+      "filter": 0,
+      "pan": 0,
+      "volume": 1
+    },
+    "sf_drive_by_car_sound": {
+      "file": "[SF] drive by car sound.wav",
+      "filter": 0,
+      "pan": 0,
+      "volume": 1
+    },
+    "sf_making_tea": {
+      "file": "[SF] making-tea.wav",
+      "filter": 0,
+      "pan": 0,
+      "volume": 1
+    },
+    "sf_man_whistling": {
+      "file": "[SF] man-whistling.wav",
+      "filter": 0,
+      "pan": 0,
+      "volume": 1
+    },
+    "sf_radio_tuning": {
+      "file": "[SF] radio tuning.wav",
+      "filter": 0,
+      "pan": 0,
+      "volume": 1
+    },
+    "sf_rotary_phone_dialing": {
+      "file": "[SF] rotary-phone-dialing.wav",
+      "filter": 0,
+      "pan": 0,
+      "volume": 1
+    },
+    "sf_rural_people": {
+      "file": "SF] rural people.wav",
+      "filter": 0,
+      "pan": 0,
+      "volume": 1
+    },
+    "sf_sheep_sound": {
+      "file": "[SF] sheep-sound.mp3",
+      "filter": 0,
+      "pan": 0,
+      "volume": 1
+    },
+    "sf_station_whistle_long": {
+      "file": "[SF] station whistle long.wav",
+      "filter": 0,
+      "pan": 0,
+      "volume": 1
+    },
+    "sf_steam_train_passing": {
+      "file": "[SF] steam train [passing.wav",
+      "filter": 0,
+      "pan": 0,
+      "volume": 1
+    },
+    "sf_switch": {
+      "file": "[SF] Switch.wav",
+      "filter": 0,
+      "pan": 0,
+      "volume": 1
+    },
+    "sf_switchting": {
+      "file": "[SF] switchting.wav",
+      "filter": 0,
+      "pan": 0,
+      "volume": 1
+    },
+    "sf_tea_filling_pot": {
+      "file": "[SF] tea filling pot.wav",
+      "filter": 0,
+      "pan": 0,
+      "volume": 1
+    },
+    "sf_tea_kettle_whistle": {
+      "file": "[SF] tea-kettle-whistle.wav",
+      "filter": 0,
+      "pan": 0,
+      "volume": 1
+    },
+    "sf_tea_pouring": {
+      "file": "[SF] tea pouring.mp3",
+      "filter": 0,
+      "pan": 0,
+      "volume": 1
+    },
+    "sf_train_bell_signals": {
+      "file": "[SF] train bell-signals.wav",
+      "filter": 0,
+      "pan": 0,
+      "volume": 1
+    },
+    "sf_train_whisltle_and_passing_by": {
+      "file": "[SF]] Train whisltle and passing by.mp3",
+      "filter": 0,
+      "pan": 0,
+      "volume": 1
+    },
+    "sf_train_whistle_3": {
+      "file": "[SF] train whistle 3.m4a",
+      "filter": 0,
+      "pan": 0,
+      "volume": 1
+    },
+    "sf_walking_on_wooden_floor": {
+      "file": "[SF] walking-on-wooden-floor.mp3",
+      "filter": 0,
+      "pan": 0,
+      "volume": 1
+    },
+    "sf_train_whistle_3_2": {
+      "file": "[SF] train whistle 3.wav",
+      "filter": 0,
+      "pan": 0,
+      "volume": 1
+    }
+  }
+}
