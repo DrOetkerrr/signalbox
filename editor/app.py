@@ -53,11 +53,13 @@ try:
 except ImportError:
     _GPIO_AVAILABLE = False
 
-BASE         = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SOUNDS_DIR   = os.path.join(BASE, "sounds")
-CONFIG_PATH  = os.path.join(BASE, "config.json")
-FILTER_CACHE = os.path.join(BASE, ".filter_cache")
+BASE           = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+SOUNDS_DIR     = os.path.join(BASE, "sounds")
+CONFIG_PATH    = os.path.join(BASE, "config.json")
+FILTER_CACHE   = os.path.join(BASE, ".filter_cache")
+CONFIG_BACKUPS = os.path.join(BASE, "_config_backups")
 os.makedirs(FILTER_CACHE, exist_ok=True)
+os.makedirs(CONFIG_BACKUPS, exist_ok=True)
 
 AUDIO_EXTS = {'.wav', '.mp3', '.ogg', '.flac', '.aiff', '.m4a'}
 
@@ -365,6 +367,14 @@ def load_config():
 
 
 def save_config(cfg):
+    # Rolling backup — keep last 20 versions before every write
+    if os.path.exists(CONFIG_PATH):
+        stamp = time.strftime("%Y%m%d_%H%M%S")
+        import shutil
+        shutil.copy2(CONFIG_PATH, os.path.join(CONFIG_BACKUPS, f"config_{stamp}.json"))
+        backups = sorted(os.listdir(CONFIG_BACKUPS))
+        for old in backups[:-20]:
+            os.remove(os.path.join(CONFIG_BACKUPS, old))
     with open(CONFIG_PATH, "w") as f:
         json.dump(cfg, f, indent=2)
 
@@ -658,6 +668,22 @@ def _run_simulate(atmosphere, cfg):
 
 
 # ── Routes ────────────────────────────────────────────────────────────────────
+
+@app.route("/api/backups")
+def list_backups():
+    files = sorted(os.listdir(CONFIG_BACKUPS), reverse=True)
+    return jsonify(files)
+
+
+@app.route("/api/backups/<filename>", methods=["POST"])
+def restore_backup(filename):
+    path = os.path.join(CONFIG_BACKUPS, filename)
+    if not os.path.exists(path) or not filename.startswith("config_"):
+        return jsonify({"error": "not found"}), 404
+    import shutil
+    save_config(load_config())   # backup current state first
+    shutil.copy2(path, CONFIG_PATH)
+    return jsonify({"ok": True, "restored": filename})
 
 @app.route("/")
 def index():
