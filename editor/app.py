@@ -395,10 +395,19 @@ def get_processed_path(sound_id, filepath, cutoff_hz, offset_s, duration_s,
     has_reverb = _REVERB_AVAILABLE and reverb_wet > 0
     if not (cutoff_hz > 0 or offset_s > 0 or duration_s > 0 or has_reverb):
         return filepath
+    mtime = int(os.path.getmtime(filepath) * 1000)
     cache_key = (f"{sound_id}_c{int(cutoff_hz)}_o{offset_s}_d{duration_s}"
-                 f"_rr{reverb_room}_rw{reverb_wet}.wav")
+                 f"_rr{reverb_room}_rw{reverb_wet}_m{mtime}.wav")
     cached = os.path.join(FILTER_CACHE, cache_key)
     if not os.path.exists(cached):
+        # Purge any older cached variants for this sound_id
+        prefix = f"{sound_id}_c{int(cutoff_hz)}_o{offset_s}_d{duration_s}_rr{reverb_room}_rw{reverb_wet}_m"
+        for old in os.listdir(FILTER_CACHE):
+            if old.startswith(prefix) and old != os.path.basename(cached):
+                try:
+                    os.remove(os.path.join(FILTER_CACHE, old))
+                except OSError:
+                    pass
         seg = AudioSegment.from_file(filepath)
         if offset_s > 0 or duration_s > 0:
             start_ms = int(offset_s * 1000)
