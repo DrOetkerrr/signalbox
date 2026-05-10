@@ -17,43 +17,32 @@ Runs autonomously from mains power. No train interaction. Atmospheric and self-c
 ### Compute
 | Item | Status | Notes |
 |---|---|---|
-| Raspberry Pi Zero W (main) | In house | WiFi, no audio jack — audio via GPIO PWM, primary controller |
-| Raspberry Pi Pico 2W (backup) | In transit | Microcontroller — backup or spare |
-| MicroSD card | In house | OS + audio files |
-| MicroSD card mount | In house | |
+| Raspberry Pi 4 | ✅ Installed | WiFi + 3.5mm audio jack, primary controller |
+| MicroSD card | ✅ Installed | OS + audio files |
 
 ### Power
 | Item | Status | Notes |
 |---|---|---|
-| 5V USB power supply | In house | Primary power source |
-| PSU chassis mount | In house | Physical mounting in model |
-| 5V–12V boost converter PCB | In house | **Not needed** — LEDs are 5V, spare/unused |
+| 5V USB power supply | ✅ Installed | Primary power source |
+| PSU chassis mount | ✅ Installed | Physical mounting in model |
+| 5V–12V boost converter PCB | Not needed | LEDs are 5V — spare/unused |
 
 ### Audio
 | Item | Status | Notes |
 |---|---|---|
-| PAM8403 amplifier module | In house | 2×3W stereo Class D, 5V powered |
-| Speakers (×2) | In house | Stereo confirmed (PAM8403 is stereo) |
+| PAM8403 amplifier module | ✅ Installed | 2×3W stereo Class D, 5V powered |
+| Speakers (×2) | ✅ Installed | Stereo, routed via ~/.asoundrc to ALSA card 0 |
 
 ### Lighting
 | Item | Status | Notes |
 |---|---|---|
-| MOSFET 4-channel PWM board | In house | Direct PWM (not I2C) — pin layout confirmed |
-| Warm white LEDs | ⚠️ confirm | 5V, 3mm/5mm SMD, count TBD |
+| MOSFET 4-channel PWM board | ✅ Installed | Direct PWM (not I2C) — all 4 channels wired and working |
+| Warm white LEDs | ✅ Installed | Wired to all 4 channels |
 
 ### Controls
 | Item | Status | Notes |
 |---|---|---|
-| SPDT toggle switch ×2 | ~~Not needed~~ | Day/night and all controls handled via iPhone control page UI |
-
-### Development / Connectivity
-| Item | Status | Notes |
-|---|---|---|
-| Micro USB data cable | In the mail | Required for SSH / OTG access |
-| Micro USB to monitor cable | In the mail | Direct display connection |
-| USB keyboard | In the mail | Direct Pi input |
-| Female-to-female Dupont wires | ⚠️ confirm | |
-| 2-pin screw terminal blocks ×5 | ⚠️ confirm | |
+| Physical buttons | Not needed | All controls via iPhone control page UI |
 
 ---
 
@@ -115,7 +104,7 @@ Scene: "Morning brew"  [day only]
 
 ### Day / Night Modes
 Switched via the Day/Night tabs on the iPhone control page (`/control`). No physical switch needed.
-⚠️ **Open question**: define exact brightness levels and flicker intensity per mode.
+Brightness levels and flicker settings are configured per-channel in the editor and stored in `config.json`.
 
 ### MOSFET Board Pin Layout (confirmed from board markings)
 
@@ -155,34 +144,39 @@ PWM1  GND1  PWM2  GND2  PWM3  GND3  PWM4  GND4
 
 ## Software Architecture
 
-### Single Python boot script — responsibilities:
-1. Loop ambient audio continuously
-2. PWM lighting — steady warm glow (CH1)
-3. PWM flicker pattern (CH2)
-4. Serve Flask editor + iPhone control page
-5. Switch between day/night profiles via control page UI
+### Flask app — `editor/app.py`
+Single Python process, responsibilities:
+1. Serve atmosphere editor (`/`) and iPhone control page (`/control`)
+2. Loop ambient audio per atmosphere (pygame channels)
+3. PWM LED control — steady and fire-flicker patterns per channel
+4. Play stove fire sound (`[SF] fire 3.wav`) on loop while stove LED is on
+5. Play startup chime (`[SF]Pi is up.mp3`) at 30% volume on boot
+6. Switch between Day/Night atmospheres via API
 
-### Libraries (provisional)
-- `pygame` or `simpleaudio` — audio
-- `RPi.GPIO` or `gpiozero` — GPIO / PWM
+### Libraries
+- `pygame` — audio playback (44100 Hz, 16-channel mixer, buffer 2048)
+- `RPi.GPIO` — software PWM at 200 Hz
+- `pydub` + `audioop-lts` — audio processing (Python 3.13 compatible)
+- `Flask` — web server + Jinja2 templates
 
 ### Boot behaviour
-- Script auto-starts on boot via systemd service
-- WiFi + SSH for development access (once connected)
+- `signalbox.service` systemd unit, enabled, `After=network-online.target`
+- Auto-restarts on crash (5s delay)
+- Development: edit on Mac, Save button auto-syncs to Pi via `sync.sh`
 
 ---
 
 ## Open Questions
 
-- [x] Main controller: Pi Zero W (no audio jack — audio via GPIO PWM → PAM8403) — Pico 2W is backup
-- [x] Stereo: 2 speakers via PAM8403 (in house)
+- [x] Main controller: Raspberry Pi 4 with 3.5mm audio jack
+- [x] Stereo: 2 speakers via PAM8403
 - [x] LEDs are 5V — 5V–12V booster not needed
 - [x] Audio model: ambient loops + randomised scenes, one scene at a time, atmosphere-specific
 - [x] Per-event params (volume, pan, filter, fade in/out) — NOT per sound globally
 - [x] Day/Night switching: via iPhone control page UI — no physical switch needed
-- [ ] Day vs night: which loops play in each? Define scenes for each atmosphere.
-- [ ] Day vs night: exact LED brightness % and flicker settings?
-- [x] CH4 = exterior lamp (outside door / platform) — all 4 channels assigned
+- [x] Day vs night: loops and scenes defined in config.json, editable in atmosphere editor
+- [x] Day vs night: LED brightness and flicker settings configured per-channel in editor
+- [x] CH4 = exterior lamp (outside door / platform) — all 4 channels assigned and wired
 
 ---
 

@@ -2,3 +2,8 @@ _backups/
 _config_backups/
 sounds/
 .filter_cache/
+.DS_Store
+Icon*
+*.pyc
+__pycache__/
+*.swp

@@ -1,0 +1,1301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Signalbox — Atmosphere Editor</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&display=swap');
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'IM Fell English', Georgia, 'Times New Roman', serif;
+    background-color: #1c0d05;
+    background-image:
+      repeating-linear-gradient(168deg, transparent 0px, transparent 5px, rgba(90,45,12,0.04) 5px, rgba(90,45,12,0.04) 6px),
+      repeating-linear-gradient(93deg,  transparent 0px, transparent 55px, rgba(70,35,10,0.03) 55px, rgba(70,35,10,0.03) 57px);
+    color: #e8d8a8;
+    min-height: 100vh;
+    user-select: none;
+  }
+
+  /* ── Header ── */
+  header { background: linear-gradient(to bottom, #2e1508, #1c0d05); border-bottom: 3px double #7a5018; padding: 10px 24px; display: flex; align-items: center; gap: 16px; }
+  header h1 { font-size: 21px; font-weight: normal; letter-spacing: 0.22em; text-transform: uppercase; color: #c8932a; text-shadow: 0 1px 4px rgba(0,0,0,0.8), 0 0 16px rgba(200,147,42,0.15); }
+  .badge { background: #0e0805; border: 1px solid #4a2e08; border-radius: 2px; padding: 3px 10px; font-size: 13px; color: #6a4818; letter-spacing: 0.14em; text-transform: uppercase; }
+  .env-badge {
+    display: flex; align-items: center; gap: 8px;
+    background: #0a0603; border: 1px solid #3a2208; border-radius: 4px;
+    padding: 4px 12px 4px 10px; cursor: default;
+  }
+  .env-lamp {
+    width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0;
+    background: #1a1a1a;
+    transition: background 0.4s, box-shadow 0.4s;
+  }
+  .env-lamp.green { background: #3a9a3a; box-shadow: 0 0 8px 2px rgba(60,180,60,0.7); animation: lamp-pulse 2.5s ease-in-out infinite; }
+  .env-lamp.red   { background: #9a2a2a; box-shadow: 0 0 6px 2px rgba(180,50,50,0.6); }
+  .env-lamp.blue  { background: #2a5a9a; box-shadow: 0 0 8px 2px rgba(60,120,200,0.6); }
+  @keyframes lamp-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.7; } }
+  .env-label { font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; }
+  .env-label.live { color: #5abf5a; }
+  .env-label.dev  { color: #5a90d0; }
+  .env-label.off  { color: #4a3010; }
+  .env-switch {
+    background: none; border: 1px solid #3a2208; border-radius: 4px;
+    color: #6a4818; font-family: inherit; font-size: 11px;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    padding: 4px 10px; cursor: pointer;
+    transition: color 0.15s, border-color 0.15s;
+    text-decoration: none; display: inline-flex; align-items: center;
+  }
+  .env-switch:hover { color: #c8932a; border-color: #7a5018; }
+  .sync-btn {
+    background: none; border: 1px solid #3a2208; border-radius: 4px;
+    color: #6a4818; font-family: inherit; font-size: 11px;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    padding: 4px 10px; cursor: pointer;
+    transition: color 0.15s, border-color 0.15s, background 0.15s;
+  }
+  .sync-btn:hover:not(:disabled) { color: #c8932a; border-color: #7a5018; }
+  .sync-btn:disabled { opacity: 0.5; cursor: default; }
+  .sync-btn.ok  { color: #5abf5a; border-color: #3a7a3a; }
+  .sync-btn.err { color: #c85a5a; border-color: #7a3030; }
+
+  /* ── Header transport ── */
+  .transport { display: flex; align-items: center; gap: 5px; margin-left: 16px; background: #0e0805; border: 1px solid #4a2e08; border-radius: 3px; padding: 5px 10px; box-shadow: inset 0 2px 5px rgba(0,0,0,0.55); }
+  .t-btn { background: linear-gradient(to bottom, #d4a832 0%, #a87820 55%, #7a5510 100%); border: 1px solid #5a3c08; border-radius: 3px; color: #180c02; font-size: 18px; width: 34px; height: 28px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,230,100,0.3); }
+  .t-btn:hover { background: linear-gradient(to bottom, #e0b840 0%, #b88220 55%, #8a6018 100%); }
+  .t-btn.active { background: linear-gradient(to bottom, #b87818, #e0b030); box-shadow: inset 0 3px 6px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(60,35,0,0.4); }
+  .t-label { font-size: 14px; color: #7a5820; margin-left: 8px; min-width: 80px; letter-spacing: 0.1em; text-transform: uppercase; }
+  .t-sep { width: 1px; height: 22px; background: #3a2208; margin: 0 8px; flex-shrink: 0; }
+  .t-btn-sim { background: linear-gradient(to bottom, #1a4a1a 0%, #0e2e0e 55%, #081a08 100%); border-color: #285828; color: #78c878; width: auto; padding: 0 14px; font-size: 14px; letter-spacing: 0.12em; }
+  .t-btn-sim:hover { background: linear-gradient(to bottom, #225222 0%, #143414 55%, #0a1e0a 100%); color: #98e898; }
+  .t-btn-sim.active { background: linear-gradient(to bottom, #0e2e0e, #2a6a2a); color: #b0f0b0; box-shadow: inset 0 3px 6px rgba(0,0,0,0.5), 0 0 10px rgba(80,180,80,0.25); }
+  .t-sim-detail { font-size: 13px; color: #4a7a4a; margin-left: 6px; letter-spacing: 0.06em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 260px; }
+  .t-vol-wrap { display: flex; align-items: center; gap: 5px; margin-left: 4px; }
+  .t-vol-icon { font-size: 16px; color: #7a5a28; cursor: default; }
+  .t-vol-slider { -webkit-appearance: none; appearance: none; width: 80px; height: 4px; background: #3a2208; border-radius: 2px; outline: none; cursor: pointer; }
+  .t-vol-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%; background: linear-gradient(to bottom, #d4a832, #7a5510); border: 1px solid #5a3c08; cursor: pointer; }
+  .t-vol-label { font-size: 12px; color: #7a5a28; min-width: 34px; text-align: right; letter-spacing: 0.04em; }
+
+  /* ── Layout ── */
+  .layout { display: grid; grid-template-columns: 260px 1fr; height: calc(100vh - 53px); }
+
+  /* ── Sidebar ── */
+  nav { background: linear-gradient(to right, #140904, #190d05); border-right: 2px solid #4a2c0a; padding: 12px 0; overflow-y: auto; display: flex; flex-direction: column; }
+  nav .section-label { font-size: 13px; letter-spacing: 0.16em; text-transform: uppercase; color: #5a3c14; padding: 12px 16px 5px; flex-shrink: 0; border-top: 1px solid #221208; margin-top: 4px; }
+  nav .section-label:first-child { border-top: none; margin-top: 0; }
+  nav button.nav-tab { display: block; width: 100%; text-align: left; padding: 8px 16px; background: none; border: none; color: #8a6030; cursor: pointer; font-size: 17px; border-left: 3px solid transparent; flex-shrink: 0; letter-spacing: 0.02em; font-family: inherit; }
+  nav button.nav-tab:hover { background: #1e1008; color: #c0a050; }
+  nav button.nav-tab.active { background: linear-gradient(to right, #231308, transparent); color: #e0c070; border-left-color: #c8932a; }
+
+  /* ── Sound library ── */
+  .sound-lib { flex: 1; overflow-y: auto; padding-bottom: 16px; }
+  .sound-item { display: flex; align-items: flex-start; gap: 0; padding: 4px 8px 4px 12px; border-radius: 2px; margin: 1px 6px; cursor: pointer; }
+  .sound-item:hover { background: #1e1008; }
+  .sound-item.playing { background: #0e1e0e; }
+  .s-name { font-size: 15px; color: #9a7838; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 2px 0 0; }
+  .s-file { font-size: 14px; color: #4e3010; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 0 2px; }
+  .sound-item.playing .s-name { color: #68a868; }
+  .sound-item.playing .s-file { color: #3a6e3a; }
+  .s-play-indicator { font-size: 14px; color: #4e3010; width: 18px; flex-shrink: 0; text-align: center; padding-top: 3px; }
+  .sound-item:hover .s-play-indicator { color: #9a7838; }
+  .sound-item.playing .s-play-indicator { color: #68a868; }
+
+  /* ── Scene transport ── */
+  .scene-transport { display: flex; align-items: center; gap: 2px; }
+  .scene-transport .t-btn { width: 27px; height: 24px; font-size: 15px; }
+
+  /* ── Atmosphere tabs ── */
+  .atmo-tab-bar { display: flex; border-bottom: 2px double #4a2c0a; margin-bottom: 22px; gap: 0; }
+  .atmo-tab { background: none; border: none; border-bottom: 3px solid transparent; padding: 9px 28px 10px; color: #5a3c14; cursor: pointer; font-size: 17px; font-family: inherit; letter-spacing: 0.1em; margin-bottom: -2px; transition: color 0.1s; }
+  .atmo-tab:hover { color: #c0a050; background: rgba(200,147,42,0.05); }
+  .atmo-tab.active { color: #e8d080; border-bottom-color: #c8932a; }
+
+  /* ── LED controls ── */
+  .led-row { display: flex; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 1px solid #1e1008; }
+  .led-row:last-child { border-bottom: none; }
+  .led-label { font-size: 14px; color: #7a5828; width: 130px; flex-shrink: 0; letter-spacing: 0.04em; }
+  .led-row input[type=range] { flex: 1; accent-color: #c8932a; }
+  .led-val { font-size: 14px; color: #7a5828; width: 36px; text-align: right; flex-shrink: 0; }
+  .led-check { display: flex; align-items: center; gap: 5px; font-size: 13px; color: #5a3c14; letter-spacing: 0.06em; flex-shrink: 0; }
+  .led-check input { accent-color: #c8932a; }
+  .led-speed { width: 64px; flex-shrink: 0; }
+
+  /* ── Main ── */
+  main { overflow-y: auto; padding: 24px; background: #180c04; }
+  .panel { display: none; }
+  .panel.active { display: block; }
+  h2 { font-size: 18px; font-weight: normal; letter-spacing: 0.18em; text-transform: uppercase; color: #c8932a; margin-bottom: 18px; padding-bottom: 8px; border-bottom: 2px double #4a2c0a; }
+  h3 { font-size: 13px; font-weight: normal; letter-spacing: 0.16em; text-transform: uppercase; color: #7a5820; margin-bottom: 10px; }
+
+  /* ── Cards ── */
+  .card { background: linear-gradient(160deg, #1e0f06, #170c04); border: 1px solid #4a2c0a; border-radius: 3px; padding: 16px; margin-bottom: 12px; box-shadow: inset 0 1px 0 rgba(200,147,42,0.07), 0 2px 6px rgba(0,0,0,0.45); }
+  .card-header { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+  .card-title { font-size: 18px; font-weight: normal; flex: 1; }
+
+  /* ── Form controls ── */
+  label { font-size: 13px; color: #5a3c14; display: block; margin-bottom: 4px; margin-top: 10px; letter-spacing: 0.12em; text-transform: uppercase; }
+  input[type=text], input[type=number], select { background: #0e0805; border: 1px solid #4a2c0a; border-radius: 2px; color: #d4b870; padding: 6px 10px; font-size: 17px; font-family: inherit; width: 100%; box-shadow: inset 0 2px 5px rgba(0,0,0,0.5); }
+  input[type=range] { width: 100%; accent-color: #c8932a; }
+  .range-row { display: flex; align-items: center; gap: 8px; }
+  .range-val { font-size: 15px; color: #7a5820; min-width: 36px; text-align: right; }
+
+  /* ── Buttons ── */
+  .btn { border: none; border-radius: 2px; cursor: pointer; font-size: 15px; padding: 6px 12px; font-family: inherit; letter-spacing: 0.05em; }
+  .btn-primary { background: linear-gradient(to bottom, #d4a832, #8a5e14); color: #180c02; border: 1px solid #5a3c08; box-shadow: 0 1px 3px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,230,100,0.22); }
+  .btn-primary:hover { background: linear-gradient(to bottom, #e0b840, #9a6e18); }
+  .btn-danger { background: linear-gradient(to bottom, #561616, #330e0e); color: #d88080; border: 1px solid #722020; box-shadow: 0 1px 3px rgba(0,0,0,0.45); }
+  .btn-danger:hover { background: linear-gradient(to bottom, #641c1c, #3e1010); }
+  .btn-ghost { background: linear-gradient(to bottom, #221208, #170d04); color: #8a6830; border: 1px solid #382008; box-shadow: 0 1px 3px rgba(0,0,0,0.4); }
+  .btn-ghost:hover { background: linear-gradient(to bottom, #2c180a, #1c1006); color: #c0a050; }
+  .btn-play { background: linear-gradient(to bottom, #184a18, #0e2e0e); color: #78b878; border: 1px solid #285828; box-shadow: 0 1px 3px rgba(0,0,0,0.4); font-size: 15px; padding: 5px 12px; }
+  .btn-play:hover { background: linear-gradient(to bottom, #1e5018, #123012); }
+  .btn-row { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+
+  .interval-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .loops-list .loop-row { display: grid; grid-template-columns: 1fr 150px 32px; gap: 8px; align-items: center; }
+
+  /* ── Save bar ── */
+  .save-bar { position: fixed; bottom: 0; left: 0; right: 0; background: linear-gradient(to top, #150a03, #1e0f06); border-top: 3px double #4a2c0a; padding: 10px 24px; display: flex; align-items: center; gap: 12px; }
+  .save-status { font-size: 14px; color: #5a3c14; flex: 1; letter-spacing: 0.08em; text-transform: uppercase; }
+  .save-status.saved { color: #4a8a4a; }
+  .save-status.unsaved { color: #b87020; }
+
+  .empty { color: #3e2810; font-size: 17px; font-style: italic; padding: 8px 0; }
+  pb { padding-bottom: 80px; display: block; }
+
+  /* ── Score ── */
+  .score { border: 1px solid #3a2208; border-radius: 3px; overflow: hidden; margin: 14px 0 0; background: #100804; box-shadow: inset 0 2px 8px rgba(0,0,0,0.5); }
+  .score-scroll { overflow-x: auto; overflow-y: visible; }
+
+  .score-ruler { height: 26px; background: #180e06; border-bottom: 1px solid #3a2008; position: relative; flex-shrink: 0; cursor: pointer; }
+  .score-ruler:hover { background: #1e1208; }
+  .score-tick { position: absolute; top: 0; height: 100%; border-left: 1px solid #2a1608; padding-left: 3px; font-size: 13px; color: #4a3018; line-height: 26px; pointer-events: none; user-select: none; font-family: inherit; }
+  .score-tick.major { border-left-color: #3e2210; color: #7a5428; }
+
+  .score-labels { width: 90px; flex-shrink: 0; border-right: 1px solid #2a1608; background: #130904; }
+  .score-row-label { height: 38px; display: flex; align-items: center; padding: 0 8px; font-size: 14px; color: #7a5828; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border-bottom: 1px solid #1c0e06; }
+
+  .score-tracks { position: relative; flex-shrink: 0; }
+  .score-row-track { height: 38px; position: relative; border-bottom: 1px solid #180c04; cursor: crosshair; }
+
+  .score-block { position: absolute; top: 5px; height: 28px; border-radius: 2px; cursor: grab; border: 1px solid rgba(0,0,0,0.35); min-width: 6px; opacity: 0.88; display: flex; align-items: center; padding: 0 4px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.18); }
+  .score-block:hover { opacity: 1; filter: brightness(1.12); }
+  .score-block.selected { border: 1px solid rgba(220,180,80,0.85) !important; box-shadow: 0 0 0 1px rgba(200,147,42,0.4), 0 1px 5px rgba(0,0,0,0.5); opacity: 1; }
+  .score-block-label { font-size: 13px; color: rgba(0,0,0,0.65); white-space: nowrap; overflow: hidden; pointer-events: none; font-weight: 600; }
+
+  .score-playhead { position: absolute; top: 0; bottom: 0; width: 2px; background: rgba(220,180,60,0.9); pointer-events: none; z-index: 20; display: none; box-shadow: 0 0 6px rgba(200,147,42,0.6); }
+
+  .score-add-row { display: flex; align-items: center; gap: 8px; padding: 7px 8px; background: #130904; border-top: 1px solid #2a1608; }
+  .score-add-row span { font-size: 14px; color: #4a3018; letter-spacing: 0.06em; }
+  .score-add-row select { width: auto; font-size: 15px; padding: 4px 8px; }
+  .score-add-row .btn { font-size: 14px; padding: 4px 10px; }
+
+  .score-empty { padding: 20px; text-align: center; color: #3a2410; font-size: 15px; font-style: italic; }
+
+  /* ── Block properties panel ── */
+  .score-props { padding: 12px 14px; background: #130904; border-top: 1px solid #2a1608; display: none; }
+  .score-props.visible { display: block; }
+  .props-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .props-title { font-size: 15px; color: #c8932a; letter-spacing: 0.05em; flex: 1; }
+  .props-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 20px; }
+  .sc-row { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
+  .sc-label { font-size: 13px; color: #5a3c14; width: 40px; flex-shrink: 0; text-align: right; letter-spacing: 0.06em; text-transform: uppercase; }
+  .sc-row input[type=range] { flex: 1; accent-color: #c8932a; }
+  .sc-val { font-size: 14px; color: #7a5828; width: 38px; text-align: right; flex-shrink: 0; }
+  .sc-row input[type=number] { width: 60px; font-size: 15px; padding: 3px 6px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>⬛ Signalbox</h1>
+  <span class="badge">Atmosphere Editor</span>
+  <div class="env-badge" id="env-badge" title="">
+    <div class="env-lamp blue" id="env-lamp"></div>
+    <span class="env-label {% if is_pi %}live{% else %}dev{% endif %}" id="env-label">{% if is_pi %}Live · Pi{% else %}Dev · Mac{% endif %}</span>
+  </div>
+  <a class="env-switch" href="{{ peer_url }}">→ {{ peer_label }}</a>
+  {% if not is_pi %}
+  <button class="sync-btn" id="sync-btn" onclick="doSync()" title="Push editor files to Pi and restart Flask">⇅ Sync</button>
+  {% endif %}
+  <div class="transport">
+    <button class="t-btn" id="btn-play" title="Play atmosphere loops" onclick="transportPlay()">▶</button>
+    <button class="t-btn" id="btn-pause" title="Pause" onclick="transportPause()">⏸</button>
+    <button class="t-btn" id="btn-stop" title="Stop all" onclick="transportStop()">⏹</button>
+    <span class="t-label" id="transport-label">Stopped</span>
+    <div class="t-sep"></div>
+    <button class="t-btn t-btn-sim" id="btn-sim" title="Simulate: run the full program — loops + random scene scheduling" onclick="toggleSimulate()">⟳ SIM</button>
+    <span class="t-sim-detail" id="sim-detail"></span>
+    <div class="t-sep"></div>
+    <div class="t-vol-wrap">
+      <span class="t-vol-icon" title="Master volume">🔊</span>
+      <input class="t-vol-slider" id="master-vol-slider" type="range" min="0" max="100" value="100"
+             oninput="onMasterVolInput(this.value)">
+      <span class="t-vol-label" id="master-vol-label">100%</span>
+    </div>
+    <div class="t-sep"></div>
+    <button class="t-btn" title="iPhone control page preview" onclick="showControlOverlay()"
+            style="width:auto;padding:0 11px;font-size:15px;letter-spacing:0.05em">📱</button>
+  </div>
+</header>
+
+<div id="control-overlay" onclick="if(event.target===this)hideControlOverlay()"
+     style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:900;align-items:center;justify-content:center">
+  <div style="background:#080402;border:2px solid #3a2208;border-radius:18px;overflow:hidden;box-shadow:0 0 60px rgba(0,0,0,0.9),0 0 0 1px rgba(200,147,42,0.08)">
+    <div style="display:flex;align-items:center;padding:7px 14px;background:#050302;border-bottom:1px solid #1e0e04;gap:10px">
+      <span style="font-size:12px;color:#3a2008;letter-spacing:0.12em;text-transform:uppercase;flex:1">📱 Control page — iPhone landscape</span>
+      <button onclick="hideControlOverlay()"
+              style="background:none;border:none;color:#5a3c14;cursor:pointer;font-size:18px;line-height:1;padding:0 2px;font-family:inherit"
+              title="Close (Esc)">✕</button>
+    </div>
+    <div style="width:844px;height:390px;overflow:hidden;display:block">
+      <iframe id="control-iframe" src="" style="width:844px;height:390px;border:none;display:block"></iframe>
+    </div>
+  </div>
+</div>
+
+<div class="layout">
+  <nav id="nav">
+    <div class="section-label" style="display:flex;align-items:center;justify-content:space-between;padding-right:10px">
+      Sounds
+      <button onclick="reloadConfig()" title="Rescan sounds folder"
+        style="background:none;border:none;color:#4a2c0a;cursor:pointer;font-size:17px;padding:0">↺</button>
+    </div>
+    <div class="sound-lib" id="nav-sounds"></div>
+  </nav>
+
+  <main>
+    <div class="atmo-tab-bar">
+      <button class="atmo-tab active" id="tab-day"   onclick="showAtmo('day',this)">☀️ Day</button>
+      <button class="atmo-tab"        id="tab-night" onclick="showAtmo('night',this)">🌙 Night</button>
+    </div>
+    <div class="panel active" id="panel-day">
+      <div id="day-content"></div>
+    </div>
+    <div class="panel" id="panel-night">
+      <div id="night-content"></div>
+    </div>
+    <pb></pb>
+  </main>
+</div>
+
+<div class="save-bar">
+  <span class="save-status" id="save-status">Loading…</span>
+  <button class="btn btn-ghost" onclick="reloadConfig()">↺ Revert</button>
+  <button class="btn btn-primary" onclick="saveConfig()">💾 Save</button>
+</div>
+
+<script>
+let cfg            = null;
+let dirty          = false;
+let soundDurations = {};
+let _selectedBlock = null;
+let _previewSceneId = null;
+let _loopAtmo       = null;
+let _mixerPaused    = false;
+let _simRunning      = false;
+let _simPollInterval = null;
+let _soundSyncInterval = null;
+
+const PX_PER_SEC = 20;
+const LABEL_W    = 90;
+
+const BLOCK_COLORS = [
+  '#c8a84b', '#4b8ec8', '#4bc87a', '#c84b7a',
+  '#8b4bc8', '#c8784b', '#4bc8c8', '#88c84b'
+];
+
+function soundColor(soundId) {
+  const idx = Object.keys(cfg.sounds).indexOf(soundId);
+  return BLOCK_COLORS[Math.max(0, idx) % BLOCK_COLORS.length];
+}
+
+// ── Init ─────────────────────────────────────────────────────────────────────
+
+async function init() {
+  const [cfgRes, durRes, volRes] = await Promise.all([
+    fetch('/api/config'),
+    fetch('/api/sound_durations'),
+    fetch('/api/volume')
+  ]);
+  cfg            = await cfgRes.json();
+  soundDurations = await durRes.json();
+  dirty = false;
+  renderAll();
+  setStatus('Loaded', true);
+  _soundSyncInterval = setInterval(syncSoundsFromFolder, 10000);
+  const volData = await volRes.json();
+  _applyVolUI(Math.round(volData.volume * 100));
+}
+
+async function reloadConfig() {
+  _selectedBlock = null;
+  const [cfgRes, durRes] = await Promise.all([
+    fetch('/api/config'),
+    fetch('/api/sound_durations')
+  ]);
+  cfg            = await cfgRes.json();
+  soundDurations = await durRes.json();
+  dirty = false;
+  renderAll();
+  setStatus('Loaded', true);
+}
+
+async function syncSoundsFromFolder() {
+  try {
+    const sounds = await (await fetch('/api/sounds')).json();
+    const oldKeys = Object.keys(cfg.sounds).sort().join(',');
+    const newKeys = Object.keys(sounds).sort().join(',');
+    if (oldKeys === newKeys) return;
+
+    // Merge: keep in-memory edits to existing entries, add new, drop stale
+    for (const [id, val] of Object.entries(sounds)) {
+      if (!(id in cfg.sounds)) cfg.sounds[id] = val;
+    }
+    for (const id of Object.keys(cfg.sounds)) {
+      if (!(id in sounds)) delete cfg.sounds[id];
+    }
+
+    // Clean orphaned event references from in-memory scene data
+    const valid = new Set(Object.keys(cfg.sounds));
+    for (const atmo of Object.values(cfg.atmospheres)) {
+      for (const scene of (atmo.scenes || [])) {
+        const before = scene.events.length;
+        scene.events = scene.events.filter(e => valid.has(e.sound));
+        if (scene.events.length < before)
+          console.warn(`Removed ${before - scene.events.length} orphaned event(s) from "${scene.name}"`);
+      }
+      atmo.loops = (atmo.loops || []).filter(l => valid.has(l.sound));
+    }
+
+    markDirty();
+    renderSoundsNav();
+    renderAll();
+  } catch (_) {}
+}
+
+async function saveConfig() {
+  const res = await fetch('/api/config', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(cfg, null, 2)
+  });
+  if (!res.ok) { setStatus('Save failed', false); return; }
+  dirty = false;
+  setStatus('Saved ✓', true);
+}
+
+function markDirty() { dirty = true; setStatus('Unsaved changes', false); }
+
+function setStatus(msg, ok) {
+  const el = document.getElementById('save-status');
+  el.textContent = msg;
+  el.className = 'save-status ' + (ok ? 'saved' : 'unsaved');
+}
+
+function showAtmo(name, btn) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.atmo-tab').forEach(b => b.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+  btn.classList.add('active');
+  if (transportState !== 'stopped') transportStop();
+}
+
+function activeAtmosphere() {
+  return document.querySelector('.atmo-tab.active')?.id?.replace('tab-', '') || 'day';
+}
+
+function renderAll() {
+  renderAtmosphere('day');
+  renderAtmosphere('night');
+  renderSoundsNav();
+}
+
+// ── Sound library ─────────────────────────────────────────────────────────────
+
+let _playingSound = null;
+
+function renderSoundsNav() {
+  const el = document.getElementById('nav-sounds');
+  el.innerHTML = Object.keys(cfg.sounds).sort((a, b) => soundLabel(a).localeCompare(soundLabel(b))).map(id => {
+    const file = soundLabel(id);
+    return `<div class="sound-item" id="sitem-${id}" onclick="toggleSound('${id}')">
+      <span class="s-play-indicator" id="sind-${id}" style="padding-top:3px">▶</span>
+      <div style="flex:1;min-width:0">
+        <div class="s-name">${file}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function toggleSound(id) {
+  if (_playingSound === id) {
+    await fetch('/api/preview/stop', { method: 'POST' });
+    setPlayingSound(null);
+  } else {
+    await fetch('/api/play/' + id, { method: 'POST' });
+    setPlayingSound(id);
+  }
+}
+
+function setPlayingSound(id) {
+  if (_playingSound) {
+    const item = document.getElementById('sitem-' + _playingSound);
+    const ind  = document.getElementById('sind-'  + _playingSound);
+    if (item) item.classList.remove('playing');
+    if (ind)  ind.textContent = '▶';
+  }
+  _playingSound = id;
+  if (id) {
+    const item = document.getElementById('sitem-' + id);
+    const ind  = document.getElementById('sind-'  + id);
+    if (item) item.classList.add('playing');
+    if (ind)  ind.textContent = '⏹';
+  }
+}
+
+// ── LED rendering ─────────────────────────────────────────────────────────────
+
+function renderLeds(atmo) {
+  const leds = cfg.atmospheres[atmo].leds || {};
+  const def  = {brightness: 0, enabled: false, flicker: false, flicker_speed: 2, flicker_depth: 40};
+  const ch   = k => Object.assign({}, def, leds[k] || {});
+
+  const ledRow = (key, label) => {
+    const led  = ch(key);
+    const br   = led.brightness;
+    const enOn = led.enabled;
+    const fOn  = led.flicker;
+    const fSpd = led.flicker_speed;
+    const fDep = led.flicker_depth;
+    return `<div class="led-row">
+      <span class="led-label">${label}</span>
+      <label class="led-check" style="margin-right:4px">
+        <input type="checkbox" ${enOn ? 'checked' : ''}
+          onchange="setLed('${atmo}','${key}','enabled',this.checked)">
+        On
+      </label>
+      <input type="range" min="0" max="100" value="${br}"
+        oninput="setLed('${atmo}','${key}','brightness',+this.value);this.nextSibling.textContent=this.value+'%'">
+      <span class="led-val">${br}%</span>
+      <label class="led-check">
+        <input type="checkbox" ${fOn ? 'checked' : ''}
+          onchange="setLed('${atmo}','${key}','flicker',this.checked)">
+        Flicker
+      </label>
+      <span style="font-size:13px;color:#4a3010;flex-shrink:0" title="Speed">⚡</span>
+      <input type="range" class="led-speed" min="1" max="5" step="0.5" value="${fSpd}"
+        ${fOn ? '' : 'disabled'} title="Flicker speed (1=slow lazy, 5=fast crackling)"
+        oninput="setLed('${atmo}','${key}','flicker_speed',+this.value)">
+      <span style="font-size:13px;color:#4a3010;flex-shrink:0" title="Depth">◑</span>
+      <input type="range" class="led-speed" min="10" max="90" step="5" value="${fDep}"
+        ${fOn ? '' : 'disabled'} title="Flicker depth — how far the brightness dips (10=subtle, 90=dramatic)"
+        oninput="setLed('${atmo}','${key}','flicker_depth',+this.value)">
+    </div>`;
+  };
+
+  return `<div class="card" style="margin-bottom:20px">
+    <h3 style="margin:0 0 12px">Lighting</h3>
+    ${ledRow('ceiling_upper', '💡 Upper ceiling')}
+    ${ledRow('ceiling_lower', '💡 Lower ceiling')}
+    ${ledRow('stove',         '🔥 Stove / fire')}
+    ${ledRow('exterior',      '🪔 Exterior lamp')}
+  </div>`;
+}
+
+function setLed(atmo, key, param, val) {
+  cfg.atmospheres[atmo].leds ??= {};
+  cfg.atmospheres[atmo].leds[key] ??= {};
+  cfg.atmospheres[atmo].leds[key][param] = val;
+  markDirty();
+  if (param === 'flicker') renderAtmosphere(atmo);
+}
+
+// ── Atmosphere ────────────────────────────────────────────────────────────────
+
+function renderAtmosphere(atmo) {
+  const el   = document.getElementById(atmo + '-content');
+  const data = cfg.atmospheres[atmo];
+  let html   = '';
+
+  // Single ambient loop
+  html += `<div class="card loops-list" style="margin-bottom:20px">
+    <div style="display:flex;align-items:center;margin-bottom:10px">
+      <h3 style="margin:0;flex:1">Ambient loop</h3>
+      <div class="scene-transport">
+        <button class="t-btn" id="lt-play-${atmo}" onclick="loopPlay('${atmo}')" title="Play loop">▶</button>
+        <button class="t-btn" id="lt-pause-${atmo}" onclick="toggleMixerPause()" title="Pause / Resume">⏸</button>
+        <button class="t-btn" id="lt-stop-${atmo}" onclick="loopStop('${atmo}')" title="Stop">⏹</button>
+      </div>
+    </div>`;
+  const loop = (data.loops || [])[0];
+  if (loop) {
+    const vol = Math.round((loop.volume || 1.0) * 100);
+    html += `<div class="loop-row">
+      <select onchange="setLoopSound('${atmo}',0,this.value)">${soundOptions(loop.sound)}</select>
+      <div class="range-row">
+        <input type="range" min="0" max="100" value="${vol}"
+          oninput="setLoopVol('${atmo}',0,this.value);this.nextSibling.textContent=this.value+'%'">
+        <span class="range-val">${vol}%</span>
+      </div>
+      <button class="btn btn-danger" style="padding:4px 8px" onclick="removeLoop('${atmo}',0)">✕</button>
+    </div>`;
+  } else {
+    html += `<div class="empty" style="display:flex;align-items:center;gap:12px;font-style:normal">
+      No ambient loop.
+      <button class="btn btn-ghost" onclick="addLoop('${atmo}')">+ Set loop</button>
+    </div>`;
+  }
+  html += '</div>';  // close card
+
+  // Scenes
+  html += '<h3>Scenes</h3>';
+  (data.scenes || []).forEach((scene, i) => { html += renderScene(atmo, scene, i); });
+  if (!data.scenes.length) html += '<div class="empty" style="margin-bottom:12px">No scenes yet.</div>';
+  html += `<div class="btn-row"><button class="btn btn-ghost" onclick="addScene('${atmo}')">+ Add scene</button></div>`;
+
+  el.innerHTML = html;
+
+  if (_selectedBlock && _selectedBlock.atmo === atmo) renderBlockProps();
+}
+
+function renderScene(atmo, scene, si) {
+  const minM = Math.round(scene.min_interval / 60);
+  const maxM = Math.round(scene.max_interval / 60);
+  return `<div class="card" id="scene-${atmo}-${si}">
+    <div class="card-header">
+      <input type="text" class="card-title"
+        style="background:none;border:none;font-size: 18px;font-weight:normal;color:#d4b870;padding:0;width:auto;flex:1;font-family:inherit;letter-spacing:0.02em"
+        value="${esc(scene.name)}" onchange="setSceneName('${atmo}',${si},this.value)" placeholder="Scene name">
+      <div class="scene-transport">
+        <button class="t-btn" id="st-play-${scene.id}" onclick="previewScene('${atmo}','${scene.id}')" title="Play">▶</button>
+        <button class="t-btn" id="st-pause-${scene.id}" onclick="toggleMixerPause()" title="Pause / Resume">⏸</button>
+        <button class="t-btn" id="st-stop-${scene.id}" onclick="stopPreview()" title="Stop">⏹</button>
+      </div>
+      <button class="btn btn-danger" onclick="removeScene('${atmo}',${si})">✕</button>
+    </div>
+    <div class="interval-row">
+      <div>
+        <label>Min interval (min)</label>
+        <input type="number" min="1" value="${minM}"
+          onchange="setSceneInterval('${atmo}',${si},'min',this.value)">
+      </div>
+      <div>
+        <label>Max interval (min)</label>
+        <input type="number" min="1" value="${maxM}"
+          onchange="setSceneInterval('${atmo}',${si},'max',this.value)">
+      </div>
+    </div>
+    ${renderScore(atmo, scene, si)}
+    <div id="props-${scene.id}" class="score-props"></div>
+  </div>`;
+}
+
+// ── Score ─────────────────────────────────────────────────────────────────────
+
+function renderScore(atmo, scene, si) {
+  const events   = scene.events || [];
+  const soundRows = [];
+  const seen     = new Set();
+  for (const ev of events) {
+    if (!seen.has(ev.sound)) { seen.add(ev.sound); soundRows.push(ev.sound); }
+  }
+
+  let maxEnd = 20;
+  for (const ev of events) {
+    const dur = soundDurations[ev.sound] || 2;
+    maxEnd = Math.max(maxEnd, (ev.start || 0) + dur);
+  }
+  const trackW = Math.round((maxEnd + 6) * PX_PER_SEC);
+  const totalS = Math.ceil(trackW / PX_PER_SEC);
+
+  // Ruler
+  let rulerHtml = '';
+  for (let t = 0; t <= totalS; t += (PX_PER_SEC >= 20 ? 5 : 10)) {
+    const major = t % 10 === 0;
+    rulerHtml += `<div class="score-tick${major?' major':''}" style="left:${t*PX_PER_SEC}px">${t}s</div>`;
+  }
+
+  // Labels + tracks
+  let labelsHtml = '';
+  let tracksHtml = '';
+
+  if (!soundRows.length) {
+    labelsHtml = `<div style="height:40px"></div>`;
+    tracksHtml = `<div class="score-empty" style="width:${trackW}px">
+      Add a sound below to start building this scene</div>`;
+  } else {
+    for (const soundId of soundRows) {
+      const missing = !(soundId in cfg.sounds);
+      const color   = missing ? '#7a2020' : soundColor(soundId);
+      labelsHtml += `<div class="score-row-label"
+        title="${missing ? '⚠ Missing file — will be skipped on playback' : soundId}"
+        style="border-left:3px solid ${color};${missing ? 'color:#c05050;font-style:italic' : ''}">
+        ${missing ? '⚠ ' : ''}${soundId}</div>`;
+
+      const blocks = events.map((ev, idx) => ({...ev, _idx: idx}))
+                           .filter(ev => ev.sound === soundId);
+      let bHtml = '';
+      for (const ev of blocks) {
+        const fullDur = soundDurations[soundId] || 2;
+        const dur  = (ev.duration && ev.duration > 0) ? Math.min(ev.duration, fullDur) : fullDur;
+        const left = (ev.start || 0) * PX_PER_SEC;
+        const bW   = Math.max(6, dur * PX_PER_SEC);
+        const isSel = _selectedBlock && _selectedBlock.atmo === atmo &&
+                      _selectedBlock.si === si && _selectedBlock.evIdx === ev._idx;
+        const blockTitle = missing
+          ? `⚠ ${soundId} — file missing`
+          : `${soundId} @ ${(ev.start||0).toFixed(1)}s`;
+        bHtml += `<div class="score-block${isSel?' selected':''}"
+          id="blk-${scene.id}-${ev._idx}"
+          style="left:${left}px;width:${bW}px;background:${color};${missing?'opacity:0.5;border:1px dashed #c05050':''}"
+          data-atmo="${atmo}" data-si="${si}" data-evidx="${ev._idx}"
+          onmousedown="blockMouseDown(event,this)"
+          onclick="event.stopPropagation()"
+          title="${blockTitle}">
+          <span class="score-block-label">${bW > 30 ? (missing ? '⚠ '+soundId : soundId) : ''}</span>
+        </div>`;
+      }
+
+      const gridStyle = `background: repeating-linear-gradient(to right,#180c04 0px,#180c04 ${PX_PER_SEC*5-1}px,#1e1006 ${PX_PER_SEC*5-1}px,#1e1006 ${PX_PER_SEC*5}px)`;
+      tracksHtml += `<div class="score-row-track" style="width:${trackW}px;${gridStyle}"
+        onclick="trackClick(event,'${atmo}',${si},'${soundId}')"
+        onmousedown="if(event.target===this)event.stopPropagation()">
+        ${bHtml}
+      </div>`;
+    }
+  }
+
+  const opts = Object.keys(cfg.sounds).sort((a,b) => soundLabel(a).localeCompare(soundLabel(b))).map(id => `<option value="${id}">${soundLabel(id)}</option>`).join('');
+
+  return `<div class="score" id="score-${scene.id}">
+    <div class="score-scroll">
+      <div style="display:flex">
+        <div style="width:${LABEL_W}px;flex-shrink:0;background:#130904;border-right:1px solid #2a1608"></div>
+        <div class="score-ruler" style="width:${trackW}px"
+          onclick="rulerClick(event,'${atmo}','${scene.id}')"
+          title="Click to play from this position">${rulerHtml}</div>
+      </div>
+      <div style="display:flex">
+        <div class="score-labels">${labelsHtml}</div>
+        <div class="score-tracks" style="width:${trackW}px">
+          ${tracksHtml}
+          <div class="score-playhead" id="playhead-${scene.id}"></div>
+        </div>
+      </div>
+    </div>
+    <div class="score-add-row">
+      <span>Add sound:</span>
+      <select id="add-sel-${scene.id}">${opts}</select>
+      <button class="btn btn-ghost" onclick="addSoundToScore('${atmo}',${si},'${scene.id}')">+ Row</button>
+    </div>
+  </div>`;
+}
+
+// ── Score interactions ────────────────────────────────────────────────────────
+
+let _blockDrag   = null;
+let _wasDragging = false;
+
+function blockMouseDown(e, el) {
+  e.preventDefault();
+  e.stopPropagation();
+  const atmo    = el.dataset.atmo;
+  const si      = +el.dataset.si;
+  const evIdx   = +el.dataset.evidx;
+  const origStart = cfg.atmospheres[atmo].scenes[si].events[evIdx].start || 0;
+  _blockDrag = { atmo, si, evIdx, origStart, startX: e.clientX, el };
+  selectBlock(atmo, si, evIdx);
+}
+
+document.addEventListener('mousemove', e => {
+  if (!_blockDrag) return;
+  _wasDragging = true;
+  const dx       = e.clientX - _blockDrag.startX;
+  const rawStart = _blockDrag.origStart + dx / PX_PER_SEC;
+  const snapped  = Math.max(0, Math.round(rawStart * 2) / 2); // snap to 0.5s
+  cfg.atmospheres[_blockDrag.atmo].scenes[_blockDrag.si].events[_blockDrag.evIdx].start = snapped;
+  _blockDrag.el.style.left = (snapped * PX_PER_SEC) + 'px';
+  _blockDrag.el.title = `${cfg.atmospheres[_blockDrag.atmo].scenes[_blockDrag.si].events[_blockDrag.evIdx].sound} @ ${snapped.toFixed(1)}s`;
+  markDirty();
+});
+
+document.addEventListener('mouseup', () => {
+  if (_blockDrag) {
+    _blockDrag = null;
+    setTimeout(() => { _wasDragging = false; }, 10);
+    renderBlockProps();
+  }
+});
+
+function trackClick(e, atmo, si, soundId) {
+  if (_wasDragging) return;
+  const rect  = e.currentTarget.getBoundingClientRect();
+  const x     = e.clientX - rect.left;
+  const start = Math.max(0, Math.round(x / PX_PER_SEC * 2) / 2);
+  cfg.atmospheres[atmo].scenes[si].events.push({ sound: soundId, start, volume: 1.0 });
+  const newIdx = cfg.atmospheres[atmo].scenes[si].events.length - 1;
+  markDirty();
+  renderAtmosphere(atmo);
+  selectBlock(atmo, si, newIdx);
+}
+
+function addSoundToScore(atmo, si, sceneId) {
+  const sel   = document.getElementById('add-sel-' + sceneId);
+  const sound = sel.value;
+  // find a gap: place after the last block for this sound, or at 0
+  const events = cfg.atmospheres[atmo].scenes[si].events;
+  let start = 0;
+  for (const ev of events) {
+    if (ev.sound === sound) {
+      start = Math.max(start, (ev.start || 0) + (soundDurations[sound] || 2) + 0.5);
+    }
+  }
+  events.push({ sound, start: Math.round(start * 2) / 2, volume: 1.0 });
+  const newIdx = events.length - 1;
+  markDirty();
+  renderAtmosphere(atmo);
+  selectBlock(atmo, si, newIdx);
+}
+
+// ── Block selection + properties ──────────────────────────────────────────────
+
+function selectBlock(atmo, si, evIdx) {
+  _selectedBlock = { atmo, si, evIdx };
+  document.querySelectorAll('.score-block').forEach(b => b.classList.remove('selected'));
+  const scene = cfg.atmospheres[atmo].scenes[si];
+  const el    = document.getElementById(`blk-${scene.id}-${evIdx}`);
+  if (el) el.classList.add('selected');
+  renderBlockProps();
+}
+
+function renderBlockProps() {
+  if (!_selectedBlock) return;
+  const { atmo, si, evIdx } = _selectedBlock;
+  const scene = cfg.atmospheres[atmo].scenes[si];
+  const ev    = scene.events[evIdx];
+  if (!ev) return;
+  const propsEl = document.getElementById('props-' + scene.id);
+  if (!propsEl) return;
+
+  const vol      = Math.round((ev.volume ?? 1) * 100);
+  const pan      = Math.round((ev.pan    ?? 0) * 100);
+  const filter   = ev.filter   ?? 0;
+  const fadeIn   = ev.fade_in  ?? 0;
+  const fadeOut  = ev.fade_out ?? 0;
+  const fullDur    = soundDurations[ev.sound] || 0;
+  const duration   = ev.duration   && ev.duration   > 0 ? ev.duration   : '';
+  const offset     = ev.offset     && ev.offset     > 0 ? ev.offset     : '';
+  const reverbRoom = Math.round((ev.reverb_room ?? 0) * 100);
+  const reverbWet  = Math.round((ev.reverb_wet  ?? 0)   * 100);
+  const panLbl  = pan === 0 ? 'C' : (pan > 0 ? 'R' : 'L') + Math.abs(pan);
+  const color   = soundColor(ev.sound);
+
+  propsEl.className = 'score-props visible';
+  propsEl.innerHTML = `
+    <div class="props-header">
+      <div style="width:10px;height:10px;border-radius:2px;background:${color};flex-shrink:0"></div>
+      <span class="props-title">${ev.sound} &nbsp;@&nbsp; ${(ev.start||0).toFixed(1)}s</span>
+      <button class="btn btn-ghost" style="font-size: 15px;padding:3px 8px" onclick="previewBlockSound()">▶ Play</button>
+      <button class="btn btn-danger" style="font-size: 15px;padding:3px 8px" onclick="removeSelectedBlock()">✕ Remove</button>
+    </div>
+    <div class="props-grid">
+      <div>
+        <div class="sc-row">
+          <span class="sc-label">Vol</span>
+          <input type="range" min="0" max="100" value="${vol}"
+            oninput="setBlockParam('volume',this.value/100);this.nextSibling.textContent=this.value+'%'">
+          <span class="sc-val">${vol}%</span>
+        </div>
+        <div class="sc-row">
+          <span class="sc-label">Pan</span>
+          <input type="range" min="-100" max="100" value="${pan}"
+            oninput="setBlockParam('pan',this.value/100);this.nextSibling.textContent=(this.value==0?'C':(this.value>0?'R':'L')+Math.abs(this.value))">
+          <span class="sc-val">${panLbl}</span>
+        </div>
+        <div class="sc-row">
+          <span class="sc-label">Filter</span>
+          <input type="range" min="0" max="8000" step="100" value="${filter}"
+            oninput="setBlockParam('filter',parseInt(this.value));this.nextSibling.textContent=this.value>0?this.value+'Hz':'off'">
+          <span class="sc-val">${filter > 0 ? filter+'Hz' : 'off'}</span>
+        </div>
+        <div class="sc-row">
+          <span class="sc-label">Reverb</span>
+          <input type="range" min="0" max="100" value="${reverbWet}"
+            oninput="setBlockParam('reverb_wet',this.value/100);this.nextSibling.textContent=this.value+'%'">
+          <span class="sc-val">${reverbWet}%</span>
+        </div>
+        <div class="sc-row">
+          <span class="sc-label">Room</span>
+          <input type="range" min="0" max="100" value="${reverbRoom}"
+            oninput="setBlockParam('reverb_room',this.value/100);this.nextSibling.textContent=this.value+'%'">
+          <span class="sc-val">${reverbRoom}%</span>
+        </div>
+      </div>
+      <div>
+        <div class="sc-row" style="margin-top:2px">
+          <span class="sc-label">Offset</span>
+          <input type="number" min="0" step="0.5" value="${offset}"
+            placeholder="0 (start)"
+            title="Start this many seconds into the file"
+            onchange="setBlockParam('offset', parseFloat(this.value)||0);renderAtmosphere(_selectedBlock.atmo)">
+          <span class="sc-val" style="width:auto">s</span>
+        </div>
+        <div class="sc-row">
+          <span class="sc-label">Duration</span>
+          <input type="number" min="0" step="0.5" value="${duration}"
+            placeholder="${fullDur > 0 ? fullDur.toFixed(1)+' (full)' : ''}"
+            title="How many seconds to play (0 = to end)"
+            onchange="setDuration(this.value)">
+          <span class="sc-val" style="width:auto">s</span>
+        </div>
+        <div class="sc-row">
+          <span class="sc-label">Fade in</span>
+          <input type="number" min="0" max="30" step="0.5" value="${fadeIn}"
+            onchange="setBlockParam('fade_in',parseFloat(this.value))">
+          <span class="sc-val" style="width:auto">s</span>
+        </div>
+        <div class="sc-row">
+          <span class="sc-label">Fade out</span>
+          <input type="number" min="0" max="30" step="0.5" value="${fadeOut}"
+            onchange="setBlockParam('fade_out',parseFloat(this.value))">
+          <span class="sc-val" style="width:auto">s</span>
+        </div>
+      </div>
+    </div>`;
+}
+
+function setBlockParam(key, val) {
+  if (!_selectedBlock) return;
+  const { atmo, si, evIdx } = _selectedBlock;
+  cfg.atmospheres[atmo].scenes[si].events[evIdx][key] = val;
+  markDirty();
+}
+
+function setDuration(val) {
+  const parsed = parseFloat(val);
+  setBlockParam('duration', isNaN(parsed) || parsed <= 0 ? 0 : parsed);
+  renderAtmosphere(_selectedBlock.atmo); // update block width on score
+}
+
+function removeSelectedBlock() {
+  if (!_selectedBlock) return;
+  const { atmo, si, evIdx } = _selectedBlock;
+  cfg.atmospheres[atmo].scenes[si].events.splice(evIdx, 1);
+  _selectedBlock = null;
+  markDirty();
+  renderAtmosphere(atmo);
+}
+
+async function previewBlockSound() {
+  if (!_selectedBlock) return;
+  const { atmo, si, evIdx } = _selectedBlock;
+  const ev = cfg.atmospheres[atmo].scenes[si].events[evIdx];
+  await saveConfig();
+  await fetch('/api/play/' + ev.sound, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ volume: ev.volume ?? 1, pan: ev.pan ?? 0, filter: ev.filter ?? 0,
+                           offset: ev.offset ?? 0, duration: ev.duration ?? 0,
+                           reverb_room: ev.reverb_room ?? 0, reverb_wet: ev.reverb_wet ?? 0 })
+  });
+  setPlayingSound(ev.sound);
+}
+
+// ── Mutations ─────────────────────────────────────────────────────────────────
+
+function addLoop(atmo) {
+  const first = Object.keys(cfg.sounds)[0] || '';
+  cfg.atmospheres[atmo].loops.push({ id: newId(), sound: first, volume: 1.0 });
+  markDirty(); renderAtmosphere(atmo);
+}
+function removeLoop(atmo, i) {
+  cfg.atmospheres[atmo].loops.splice(i, 1);
+  markDirty(); renderAtmosphere(atmo);
+}
+function setLoopSound(atmo, i, val) { cfg.atmospheres[atmo].loops[i].sound = val; markDirty(); }
+function setLoopVol(atmo, i, val)   { cfg.atmospheres[atmo].loops[i].volume = val / 100; markDirty(); }
+
+function addScene(atmo) {
+  cfg.atmospheres[atmo].scenes.push({
+    id: newId(), name: 'New scene', min_interval: 0, max_interval: 60, events: []
+  });
+  markDirty(); renderAtmosphere(atmo);
+}
+function removeScene(atmo, i) {
+  const name = cfg.atmospheres[atmo].scenes[i].name || 'this scene';
+  if (!confirm(`Remove "${name}"?`)) return;
+  if (_selectedBlock && _selectedBlock.atmo === atmo && _selectedBlock.si === i) _selectedBlock = null;
+  cfg.atmospheres[atmo].scenes.splice(i, 1);
+  markDirty(); renderAtmosphere(atmo);
+}
+function setSceneName(atmo, i, val)     { cfg.atmospheres[atmo].scenes[i].name = val; markDirty(); }
+function setSceneInterval(atmo, i, w, v) {
+  cfg.atmospheres[atmo].scenes[i][w === 'min' ? 'min_interval' : 'max_interval'] = parseInt(v) * 60;
+  markDirty();
+}
+
+function soundLabel(id) {
+  const s = cfg.sounds[id];
+  const file = (s && s.file) ? s.file.replace(/^.*[\\/]/, '') : id;
+  return file;
+}
+
+function soundOptions(selected) {
+  return Object.keys(cfg.sounds).sort((a, b) => soundLabel(a).localeCompare(soundLabel(b))).map(id =>
+    `<option value="${id}" ${id === selected ? 'selected' : ''}>${soundLabel(id)}</option>`).join('');
+}
+
+// ── Preview / timeline ────────────────────────────────────────────────────────
+
+let _pollInterval = null;
+
+async function previewScene(atmo, sceneId, startAt = 0) {
+  if (_previewSceneId && _previewSceneId !== sceneId) setSceneTransportUI(_previewSceneId, 'stopped');
+  _previewSceneId = sceneId; _mixerPaused = false;
+  await saveConfig();
+  await fetch(`/api/preview/${atmo}/${sceneId}`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ start_at: startAt })
+  });
+  resetTimeline();
+  const ph = document.getElementById('playhead-' + sceneId);
+  if (ph) { ph.style.display = 'block'; ph.style.left = (startAt * PX_PER_SEC) + 'px'; }
+  setSceneTransportUI(sceneId, 'playing');
+  if (!_loopAtmo) { _loopAtmo = atmo; setLoopTransportUI(atmo, 'playing'); }
+  startPolling(sceneId);
+}
+
+function rulerClick(e, atmo, sceneId) {
+  const rect = e.currentTarget.getBoundingClientRect();
+  const t    = Math.max(0, (e.clientX - rect.left) / PX_PER_SEC);
+  previewScene(atmo, sceneId, t);
+}
+
+async function stopPreview() {
+  await fetch('/api/preview/stop', { method: 'POST' });
+  stopPolling(); resetTimeline(); setPlayingSound(null);
+  if (_previewSceneId) { setSceneTransportUI(_previewSceneId, 'stopped'); _previewSceneId = null; }
+  _mixerPaused = false;
+  // loop channels intentionally left running
+}
+
+function startPolling(sceneId) {
+  stopPolling();
+  const startedAt = Date.now();
+  _pollInterval = setInterval(async () => {
+    const s = await (await fetch('/api/preview/status')).json();
+    updateTimeline(s);
+    // Grace period: don't stop on !playing within first 300ms (thread may not have set state yet)
+    if (!s.playing && Date.now() - startedAt > 300) {
+      stopPolling(); resetTimeline();
+      setSceneTransportUI(sceneId, 'stopped');
+      if (_previewSceneId === sceneId) _previewSceneId = null;
+      _mixerPaused = false;
+    }
+  }, 50);
+}
+
+function stopPolling() {
+  if (_pollInterval) { clearInterval(_pollInterval); _pollInterval = null; }
+}
+
+function resetTimeline() {
+  document.querySelectorAll('.score-playhead').forEach(ph => {
+    ph.style.display = 'none';
+    ph.style.left = '0px';
+  });
+}
+
+function updateTimeline(s) {
+  if (!s.scene_id || !s.playing) return;
+  const ph = document.getElementById('playhead-' + s.scene_id);
+  if (!ph) return;
+  const left = s.elapsed * PX_PER_SEC;
+  ph.style.display = 'block';
+  ph.style.left = left + 'px';
+
+  // Auto-scroll to keep playhead visible inside the score-scroll container
+  const scroll = ph.closest('.score-scroll');
+  if (!scroll) return;
+  const phInScroll = LABEL_W + left;
+  const viewLeft   = scroll.scrollLeft;
+  const viewRight  = scroll.scrollLeft + scroll.clientWidth;
+  if (phInScroll > viewRight - 24) {
+    // Playhead near/past right edge — scroll forward, place playhead ~40% from left
+    scroll.scrollLeft = phInScroll - scroll.clientWidth * 0.4;
+  } else if (phInScroll < viewLeft + LABEL_W) {
+    // Playhead scrolled off left (e.g. after scrub backwards)
+    scroll.scrollLeft = Math.max(0, phInScroll - LABEL_W);
+  }
+}
+
+// ── Transport ─────────────────────────────────────────────────────────────────
+
+let transportState = 'stopped';
+
+async function transportPlay() {
+  const atmo = activeAtmosphere();
+  if (transportState === 'paused') {
+    await fetch('/api/transport/unpause', { method: 'POST' });
+  } else {
+    await fetch(`/api/transport/play/${atmo}`, { method: 'POST' });
+  }
+  transportState = 'playing';
+  setTransportUI();
+}
+
+async function transportPause() {
+  if (transportState !== 'playing') return;
+  await fetch('/api/transport/pause', { method: 'POST' });
+  transportState = 'paused';
+  setTransportUI();
+}
+
+async function transportStop() {
+  await fetch('/api/stop_all', { method: 'POST' });
+  stopPolling(); resetTimeline(); setPlayingSound(null);
+  if (_previewSceneId) { setSceneTransportUI(_previewSceneId, 'stopped'); _previewSceneId = null; }
+  ['day', 'night'].forEach(a => setLoopTransportUI(a, 'stopped'));
+  _loopAtmo = null; _mixerPaused = false;
+  if (_simRunning) { _simRunning = false; stopSimPoll(); setSimUI(false); }
+  transportState = 'stopped'; setTransportUI();
+}
+
+function setSceneTransportUI(sceneId, state) {
+  const play  = document.getElementById('st-play-'  + sceneId);
+  const pause = document.getElementById('st-pause-' + sceneId);
+  if (play)  play.classList.toggle('active', state === 'playing');
+  if (pause) pause.classList.toggle('active', state === 'paused');
+}
+
+function setLoopTransportUI(atmo, state) {
+  const play  = document.getElementById('lt-play-'  + atmo);
+  const pause = document.getElementById('lt-pause-' + atmo);
+  if (play)  play.classList.toggle('active', state === 'playing');
+  if (pause) pause.classList.toggle('active', state === 'paused');
+}
+
+async function toggleMixerPause() {
+  if (_mixerPaused) {
+    await fetch('/api/transport/unpause', { method: 'POST' });
+    _mixerPaused = false;
+  } else {
+    await fetch('/api/transport/pause', { method: 'POST' });
+    _mixerPaused = true;
+  }
+  const state = _mixerPaused ? 'paused' : 'playing';
+  if (_previewSceneId) setSceneTransportUI(_previewSceneId, state);
+  if (_loopAtmo)       setLoopTransportUI(_loopAtmo, state);
+}
+
+async function loopPlay(atmo) {
+  _loopAtmo = atmo; _mixerPaused = false;
+  await fetch(`/api/transport/play/${atmo}`, { method: 'POST' });
+  setLoopTransportUI(atmo, 'playing');
+  transportState = 'playing'; setTransportUI();
+}
+
+async function loopStop(atmo) {
+  await fetch('/api/stop_all', { method: 'POST' });
+  stopPolling(); resetTimeline(); setPlayingSound(null);
+  if (_previewSceneId) { setSceneTransportUI(_previewSceneId, 'stopped'); _previewSceneId = null; }
+  setLoopTransportUI(atmo, 'stopped');
+  _loopAtmo = null; _mixerPaused = false;
+  transportState = 'stopped'; setTransportUI();
+}
+
+function setTransportUI() {
+  const atmo = activeAtmosphere();
+  document.getElementById('btn-play').classList.toggle('active', transportState === 'playing');
+  document.getElementById('btn-pause').classList.toggle('active', transportState === 'paused');
+  const label = transportState === 'playing' ? atmo[0].toUpperCase() + atmo.slice(1) + ' playing'
+              : transportState === 'paused'  ? 'Paused' : 'Stopped';
+  document.getElementById('transport-label').textContent = label;
+}
+
+// ── Utilities ─────────────────────────────────────────────────────────────────
+
+function newId() { return 'id_' + Math.random().toString(36).slice(2, 9); }
+function esc(s)  { return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+
+function fmtTime(s) {
+  s = Math.round(s);
+  return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+}
+
+// ── Master volume ─────────────────────────────────────────────────────────────
+
+let _volDebounce = null;
+
+function _applyVolUI(pct) {
+  document.getElementById('master-vol-slider').value = pct;
+  document.getElementById('master-vol-label').textContent = pct + '%';
+}
+
+function onMasterVolInput(pct) {
+  _applyVolUI(pct);
+  clearTimeout(_volDebounce);
+  _volDebounce = setTimeout(() => {
+    fetch('/api/volume', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ volume: pct / 100 })
+    });
+  }, 80);
+}
+
+// ── Simulate ──────────────────────────────────────────────────────────────────
+
+async function toggleSimulate() {
+  if (_simRunning) {
+    await fetch('/api/simulate/stop', { method: 'POST' });
+    _simRunning = false;
+    stopSimPoll();
+    setSimUI(false);
+    transportState = 'stopped'; setTransportUI();
+  } else {
+    const atmo = activeAtmosphere();
+    _simRunning = true;
+    await fetch(`/api/simulate/${atmo}`, { method: 'POST' });
+    setSimUI(true);
+    transportState = 'playing'; setTransportUI();
+    startSimPoll();
+  }
+}
+
+function startSimPoll() {
+  stopSimPoll();
+  stopPolling(); // sim owns the timeline while running
+  let simTick = 0;
+  _simPollInterval = setInterval(async () => {
+    // Fetch preview status every tick for smooth playhead; sim status every 4th tick
+    const fetches = [fetch('/api/preview/status').then(r => r.json())];
+    if (simTick % 4 === 0) fetches.push(fetch('/api/simulate/status').then(r => r.json()));
+    const results = await Promise.all(fetches);
+    const p = results[0];
+    const s = results[1];
+    simTick++;
+
+    if (p.playing) updateTimeline(p);
+    else resetTimeline();
+
+    if (s) {
+      if (!s.running && _simRunning) {
+        _simRunning = false;
+        stopSimPoll();
+        resetTimeline();
+        setSimUI(false);
+        transportState = 'stopped'; setTransportUI();
+        return;
+      }
+      updateSimDetail(s);
+    }
+  }, 100);
+}
+
+function stopSimPoll() {
+  if (_simPollInterval) { clearInterval(_simPollInterval); _simPollInterval = null; }
+}
+
+function setSimUI(active) {
+  const btn = document.getElementById('btn-sim');
+  if (btn) btn.classList.toggle('active', active);
+  if (!active) document.getElementById('sim-detail').textContent = '';
+}
+
+function updateSimDetail(s) {
+  const el = document.getElementById('sim-detail');
+  if (!el) return;
+  if (s.mode === 'waiting' && s.scene_name) {
+    const rem = s.remaining > 0 ? ` · ${s.remaining} left` : ' · last in cycle';
+    el.textContent = `Next: ${s.scene_name} · ${fmtTime(s.next_in)}${rem}`;
+  } else if (s.mode === 'playing' && s.scene_name) {
+    el.textContent = `▶ ${s.scene_name}`;
+  } else if (s.mode === 'starting') {
+    el.textContent = 'Starting…';
+  } else {
+    el.textContent = '';
+  }
+}
+
+// ── Control overlay ───────────────────────────────────────────────────────────
+
+function showControlOverlay() {
+  const overlay = document.getElementById('control-overlay');
+  document.getElementById('control-iframe').src = '/control';
+  overlay.style.display = 'flex';
+}
+
+function hideControlOverlay() {
+  document.getElementById('control-overlay').style.display = 'none';
+  document.getElementById('control-iframe').src = '';
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') hideControlOverlay(); });
+
+document.addEventListener('click', e => {
+  if (e.target.closest('button, input[type="checkbox"]')) {
+    fetch('/api/play/ui', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({volume: 0.5})
+    });
+  }
+});
+
+async function pollPiHealth() {
+  const lamp  = document.getElementById('env-lamp');
+  const label = document.getElementById('env-label');
+  const badge = document.getElementById('env-badge');
+  const isPi  = label.classList.contains('live');
+  try {
+    await fetch('/api/health');
+    lamp.className  = 'env-lamp ' + (isPi ? 'green' : 'blue');
+    badge.title     = isPi ? 'Pi connected — app running' : 'Dev server running';
+  } catch {
+    lamp.className  = 'env-lamp red';
+    label.textContent = isPi ? 'Pi offline' : 'Dev · offline';
+    label.className = 'env-label off';
+    badge.title     = 'App not reachable';
+  }
+}
+pollPiHealth();
+setInterval(pollPiHealth, 5000);
+
+async function doSync() {
+  const btn = document.getElementById('sync-btn');
+  if (!btn) return;
+  btn.disabled = true;
+  btn.classList.remove('ok', 'err');
+  btn.textContent = '⇅ Syncing…';
+  try {
+    const r = await fetch('/api/sync', { method: 'POST' });
+    const d = await r.json();
+    if (d.ok) {
+      btn.textContent = '✓ Synced';
+      btn.classList.add('ok');
+    } else {
+      btn.textContent = '✗ Failed';
+      btn.classList.add('err');
+      console.error('[sync]', d.output || d.error);
+    }
+  } catch (e) {
+    btn.textContent = '✗ Error';
+    btn.classList.add('err');
+  }
+  btn.disabled = false;
+  setTimeout(() => {
+    btn.textContent = '⇅ Sync';
+    btn.classList.remove('ok', 'err');
+  }, 3000);
+}
+
+init();
+</script>
+</body>
+</html>

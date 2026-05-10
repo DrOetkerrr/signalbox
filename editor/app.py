@@ -3,6 +3,7 @@ import math
 import os
 import re
 import random
+import subprocess
 import threading
 import time
 from flask import Flask, render_template, request, jsonify
@@ -13,7 +14,7 @@ try:
     import pygame
     from pydub import AudioSegment
     from pydub.effects import low_pass_filter
-    pygame.mixer.init(frequency=44100, size=-16, channels=2, buffer=512)
+    pygame.mixer.init(frequency=44100, size=-16, channels=2, buffer=2048)
     pygame.mixer.set_num_channels(16)
     _AUDIO_AVAILABLE = True
 except Exception as e:
@@ -52,6 +53,9 @@ try:
     _GPIO_AVAILABLE = True
 except ImportError:
     _GPIO_AVAILABLE = False
+
+PI_URL  = "http://signalbox.local:5001"
+MAC_URL = "http://localhost:5001"
 
 BASE           = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SOUNDS_DIR     = os.path.join(BASE, "sounds")
@@ -146,7 +150,7 @@ _stop_simulate   = threading.Event()
 _simulate_state  = {"running": False, "atmosphere": None, "mode": "idle",
                     "scene_name": None, "scene_id": None, "next_in": 0.0, "remaining": 0}
 
-_master_volume   = 1.0
+_master_volume   = 0.5
 _channel_volumes = {}
 
 _LED_DEFAULTS = {
@@ -175,6 +179,12 @@ _led_test_running = False
 _led_test_thread  = None
 _stop_led_test    = threading.Event()
 _led_test_state   = {"running": False, "step": ""}
+
+_stove_sound_thread = None
+_stop_stove_sound   = threading.Event()
+STOVE_SOUND_CHANNEL = 10
+STOVE_FIRE_SOUNDS   = ["sf_fire_3"]
+_stove_sound_volume = 1.0
 
 
 def _refresh_led_state(cfg):
@@ -217,8 +227,13 @@ def _flicker_duty(brightness, speed, depth, t):
     raw = (0.50 * math.sin(t * speed * 6.28318)
          + 0.30 * math.sin(t * speed * 2.71828 * 6.28318)
          + 0.20 * math.sin(t * speed * 4.13169 * 6.28318))
-    val = lo + (1.0 - lo) * (0.5 + 0.5 * raw)
-    return max(0.0, min(100.0, brightness * max(lo, val)))
+    unit = max(0.0, min(1.0, 0.5 + 0.5 * raw))
+    # Asymmetric power curve: at high depth the LED spends more time near the dim
+    # floor with quick bright bursts — fire-like. At low depth it stays near-symmetric.
+    power = 1.0 + (depth / 100.0) * 0.9
+    unit  = unit ** power
+    val   = lo + (1.0 - lo) * unit
+    return max(0.0, min(100.0, brightness * val))
 
 
 def _run_led_test():
@@ -322,6 +337,37 @@ def _led_flicker_loop():
             pwm.ChangeDutyCycle(max(0.0, min(100.0, duty)))
         t += 0.05
         _stop_led_flicker.wait(timeout=0.05)
+
+
+def _stove_sound_loop():
+    global _stove_sound_volume
+    playing = False
+    last_vol = _stove_sound_volume
+    ch = pygame.mixer.Channel(STOVE_SOUND_CHANNEL)
+    while not _stop_stove_sound.is_set():
+        stove = _led_live_state.get(_current_atmosphere, {}).get("stove", {})
+        stove_on = stove.get("enabled", False) and not _led_test_running
+        if stove_on and not playing:
+            try:
+                cfg = load_config()
+                sound_id = random.choice(STOVE_FIRE_SOUNDS)
+                fp = sound_file(cfg, sound_id)
+                if fp and os.path.exists(fp) and _AUDIO_AVAILABLE:
+                    snd = pygame.mixer.Sound(fp)
+                    ch.play(snd, loops=-1)
+                    ch.set_volume(_stove_sound_volume)
+                    last_vol = _stove_sound_volume
+                    playing = True
+            except Exception as e:
+                print(f"[stove sound] {e}")
+        elif not stove_on and playing:
+            ch.stop()
+            playing = False
+        elif playing and _stove_sound_volume != last_vol:
+            ch.set_volume(_stove_sound_volume)
+            last_vol = _stove_sound_volume
+        _stop_stove_sound.wait(timeout=0.2)
+    ch.stop()
 
 
 LOOP_CHANNEL_START  = 0
@@ -685,9 +731,22 @@ def restore_backup(filename):
     shutil.copy2(path, CONFIG_PATH)
     return jsonify({"ok": True, "restored": filename})
 
+@app.route("/api/health")
+def health():
+    cfg = load_config()
+    return jsonify({
+        "ok": True,
+        "audio": _AUDIO_AVAILABLE,
+        "gpio": _GPIO_AVAILABLE,
+        "sounds": len(cfg.get("sounds", {})),
+    })
+
+
 @app.route("/")
 def index():
-    return render_template("index.html")
+    peer = MAC_URL if _GPIO_AVAILABLE else PI_URL
+    return render_template("index.html", is_pi=_GPIO_AVAILABLE,
+                           peer_url=peer, peer_label="Mac" if _GPIO_AVAILABLE else "Pi")
 
 
 @app.route("/api/config")
@@ -854,7 +913,9 @@ def play_sound(sound_id):
 
 @app.route("/control")
 def control():
-    return render_template("control.html")
+    peer = MAC_URL + "/control" if _GPIO_AVAILABLE else PI_URL + "/control"
+    return render_template("control.html", is_pi=_GPIO_AVAILABLE,
+                           peer_url=peer, peer_label="Mac" if _GPIO_AVAILABLE else "Pi")
 
 
 @app.route("/api/led", methods=["POST"])
@@ -898,6 +959,24 @@ def led_test_status():
     return jsonify(_led_test_state)
 
 
+@app.route("/api/reboot", methods=["POST"])
+def reboot():
+    if not _GPIO_AVAILABLE:
+        return jsonify({"error": "Pi only"}), 403
+    threading.Timer(1.0, lambda: os.system("sudo reboot")).start()
+    return jsonify({"ok": True})
+
+
+@app.route("/api/stove/volume", methods=["GET", "POST"])
+def stove_volume():
+    global _stove_sound_volume
+    if request.method == "POST":
+        val = float(request.get_json(silent=True).get("volume", _stove_sound_volume))
+        _stove_sound_volume = max(0.0, min(1.0, val))
+        return jsonify({"ok": True, "volume": _stove_sound_volume})
+    return jsonify({"volume": _stove_sound_volume})
+
+
 @app.route("/api/atmosphere", methods=["POST"])
 def set_atmosphere():
     global _current_atmosphere
@@ -905,6 +984,29 @@ def set_atmosphere():
     atmo = body.get("atmosphere", "day")
     _current_atmosphere = atmo
     return jsonify({"ok": True, "atmosphere": atmo})
+
+
+@app.route("/api/sync", methods=["POST"])
+def api_sync():
+    if _GPIO_AVAILABLE:
+        return jsonify({"error": "sync only available on Mac"}), 403
+    sync_script = os.path.join(BASE, "sync.sh")
+    if not os.path.exists(sync_script):
+        return jsonify({"error": "sync.sh not found"}), 404
+    try:
+        result = subprocess.run(
+            ["bash", sync_script],
+            capture_output=True, text=True, timeout=90,
+            env={**os.environ, "PATH": os.environ.get("PATH", "") + ":/opt/homebrew/bin:/usr/local/bin"}
+        )
+        return jsonify({
+            "ok": result.returncode == 0,
+            "output": result.stdout + result.stderr
+        })
+    except subprocess.TimeoutExpired:
+        return jsonify({"error": "sync timed out"}), 504
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 if __name__ == "__main__":
@@ -916,5 +1018,22 @@ if __name__ == "__main__":
         _stop_led_flicker.clear()
         _led_flicker_thread = threading.Thread(target=_led_flicker_loop, daemon=True)
         _led_flicker_thread.start()
+    _stop_stove_sound.clear()
+    _stove_sound_thread = threading.Thread(target=_stove_sound_loop, daemon=True)
+    _stove_sound_thread.start()
     atexit.register(_cleanup_leds)
+
+    def _play_startup_chime():
+        time.sleep(2)
+        try:
+            cfg = load_config()
+            fp = sound_file(cfg, "sf_pi_is_up")
+            if fp and os.path.exists(fp) and _AUDIO_AVAILABLE:
+                snd = pygame.mixer.Sound(fp)
+                snd.set_volume(0.3)
+                pygame.mixer.Channel(SCENE_CHANNEL_START).play(snd)
+        except Exception as e:
+            print(f"[startup chime] {e}")
+
+    threading.Thread(target=_play_startup_chime, daemon=True).start()
     app.run(host="0.0.0.0", port=5001, debug=False)
