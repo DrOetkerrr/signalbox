@@ -220,6 +220,8 @@
   <a class="env-switch" href="{{ peer_url }}">→ {{ peer_label }}</a>
   {% if not is_pi %}
   <button class="sync-btn" id="sync-btn" onclick="doSync()" title="Push editor files to Pi and restart Flask">⇅ Sync</button>
+  <button class="sync-btn" id="restart-btn" onclick="doRestart()" title="Restart Mac Flask server">↺ Restart</button>
+  <button class="sync-btn" id="stop-btn" onclick="doStop()" title="Stop Mac Flask server">⏻ Stop</button>
   {% endif %}
   <div class="transport">
     <button class="t-btn" id="btn-play" title="Play atmosphere loops" onclick="transportPlay()">▶</button>
@@ -449,6 +451,8 @@ function setPlayingSound(id) {
     if (ind)  ind.textContent = '▶';
   }
   _playingSound = id;
+  document.getElementById('bp-play')?.classList.toggle('active', !!id);
+  document.getElementById('bp-pause')?.classList.toggle('active', false);
   if (id) {
     const item = document.getElementById('sitem-' + id);
     const ind  = document.getElementById('sind-'  + id);
@@ -799,7 +803,11 @@ function renderBlockProps() {
     <div class="props-header">
       <div style="width:10px;height:10px;border-radius:2px;background:${color};flex-shrink:0"></div>
       <span class="props-title">${ev.sound} &nbsp;@&nbsp; ${(ev.start||0).toFixed(1)}s</span>
-      <button class="btn btn-ghost" style="font-size: 15px;padding:3px 8px" onclick="previewBlockSound()">▶ Play</button>
+      <div class="scene-transport">
+        <button class="t-btn" id="bp-play" onclick="previewBlockSound()" title="Play">▶</button>
+        <button class="t-btn" id="bp-pause" onclick="toggleMixerPause()" title="Pause / Resume">⏸</button>
+        <button class="t-btn" id="bp-stop" onclick="stopBlockSound()" title="Stop">⏹</button>
+      </div>
       <button class="btn btn-danger" style="font-size: 15px;padding:3px 8px" onclick="removeSelectedBlock()">✕ Remove</button>
     </div>
     <div class="props-grid">
@@ -888,6 +896,11 @@ function removeSelectedBlock() {
   _selectedBlock = null;
   markDirty();
   renderAtmosphere(atmo);
+}
+
+async function stopBlockSound() {
+  await fetch('/api/preview/stop', { method: 'POST' });
+  setPlayingSound(null);
 }
 
 async function previewBlockSound() {
@@ -1091,6 +1104,10 @@ async function toggleMixerPause() {
   const state = _mixerPaused ? 'paused' : 'playing';
   if (_previewSceneId) setSceneTransportUI(_previewSceneId, state);
   if (_loopAtmo)       setLoopTransportUI(_loopAtmo, state);
+  if (_playingSound) {
+    document.getElementById('bp-play')?.classList.toggle('active', !_mixerPaused);
+    document.getElementById('bp-pause')?.classList.toggle('active', _mixerPaused);
+  }
 }
 
 async function loopPlay(atmo) {
@@ -1293,6 +1310,39 @@ async function doSync() {
     btn.textContent = '⇅ Sync';
     btn.classList.remove('ok', 'err');
   }, 3000);
+}
+
+async function doRestart() {
+  const btn = document.getElementById('restart-btn');
+  if (!btn) return;
+  btn.disabled = true;
+  btn.textContent = '↺ Restarting…';
+  try {
+    await fetch('/api/restart', { method: 'POST' });
+  } catch (_) {}
+  btn.textContent = '↺ Waiting…';
+  await new Promise(res => {
+    const t = setInterval(async () => {
+      try {
+        const r = await fetch('/api/health');
+        if (r.ok) { clearInterval(t); res(); }
+      } catch (_) {}
+    }, 800);
+  });
+  btn.textContent = '↺ Restart';
+  btn.disabled = false;
+  location.reload();
+}
+
+async function doStop() {
+  const btn = document.getElementById('stop-btn');
+  if (!btn) return;
+  if (!confirm('Stop the Mac Flask server?')) return;
+  btn.disabled = true;
+  btn.textContent = '⏻ Stopping…';
+  try { await fetch('/api/shutdown', { method: 'POST' }); } catch (_) {}
+  btn.textContent = '⏻ Stopped';
+  btn.classList.add('err');
 }
 
 init();

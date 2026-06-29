@@ -1,5 +1,5 @@
 #!/bin/bash
-SRC="/Users/willem-jan/Desktop/CODE PROJECTS/Signalbox"
+SRC="/Users/willem-jan/Desktop/Hobby Projects/Signalbox"
 DEST="$SRC/_backups"
 STAMP=$(date +"%Y%m%d_%H%M")
 zip -rq "$DEST/signalbox_$STAMP.zip" "$SRC" --exclude "$SRC/_backups/*"

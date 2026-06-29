@@ -73,11 +73,6 @@
               "volume": 1
             },
             {
-              "sound": "sf_man_whistling",
-              "start": 8.5,
-              "volume": 1
-            },
-            {
               "duration": 4,
               "reverb_wet": 0.16,
               "sound": "sf_walking_on_wooden_floor",
@@ -115,6 +110,14 @@
               "sound": "sf_tea_pouring",
               "start": 27,
               "volume": 0.75
+            },
+            {
+              "pan": -0.55,
+              "reverb_room": 0.21,
+              "reverb_wet": 0.12,
+              "sound": "sf_happy_whistle",
+              "start": 8.5,
+              "volume": 0.19
             }
           ],
           "id": "scene_1",
@@ -154,10 +157,10 @@
               "volume": 1
             },
             {
-              "filter": 1500,
+              "filter": 0,
               "pan": 0.79,
-              "reverb_room": 0.18,
-              "reverb_wet": 0.13,
+              "reverb_room": 0,
+              "reverb_wet": 0,
               "sound": "2024_is_not_passed_yet",
               "start": 19.5,
               "volume": 0.98
@@ -234,11 +237,6 @@
               "sound": "sf_switch",
               "start": 38,
               "volume": 0.7
-            },
-            {
-              "sound": "sf_switch",
-              "start": 18.5,
-              "volume": 1
             }
           ],
           "id": "id_42inzb6",
@@ -443,11 +441,11 @@
               "volume": 0.53
             },
             {
+              "reverb_room": 0.26,
+              "reverb_wet": 0.18,
               "sound": "sf_bell_signal",
               "start": 25.5,
-              "volume": 0.69,
-              "reverb_wet": 0.18,
-              "reverb_room": 0.26
+              "volume": 0.69
             },
             {
               "reverb_wet": 0.01,
@@ -482,10 +480,10 @@
               "volume": 0.78
             },
             {
+              "pan": 0.57,
               "sound": "sf_sheep_sound",
               "start": 18,
-              "volume": 0.38,
-              "pan": 0.57
+              "volume": 0.38
             }
           ],
           "id": "id_mb329ee",
@@ -518,11 +516,11 @@
               "volume": 0.6
             },
             {
+              "reverb_room": 0.36,
+              "reverb_wet": 0.28,
               "sound": "sf_switchting",
               "start": 34,
-              "volume": 0.92,
-              "reverb_wet": 0.28,
-              "reverb_room": 0.36
+              "volume": 0.92
             },
             {
               "duration": 3,
@@ -531,11 +529,11 @@
               "volume": 0.84
             },
             {
+              "reverb_room": 0.35,
+              "reverb_wet": 0.26,
               "sound": "sf_walking_on_wooden_floor",
               "start": 51.5,
-              "volume": 1,
-              "reverb_wet": 0.26,
-              "reverb_room": 0.35
+              "volume": 1
             },
             {
               "sound": "sf_door_open",
@@ -551,30 +549,30 @@
         {
           "events": [
             {
-              "pan": 0.82,
+              "pan": 0.79,
               "reverb_room": 0,
               "reverb_wet": 0,
               "sound": "jimmy_fiona_and_the_dance",
               "start": 7.5,
-              "volume": 0.88
+              "volume": 0.92
             },
             {
               "duration": 6,
+              "reverb_room": 0.33,
+              "reverb_wet": 0.28,
               "sound": "sf_rotary_phone_dialing",
               "start": 0,
-              "volume": 0.77,
-              "reverb_wet": 0.28,
-              "reverb_room": 0.33
+              "volume": 0.77
             },
             {
               "duration": 40,
               "fade_in": 2,
               "pan": -0.89,
+              "reverb_room": 0.33,
+              "reverb_wet": 0.27,
               "sound": "radio_shine_on_harvest_moon",
               "start": 0,
-              "volume": 0.12,
-              "reverb_wet": 0.27,
-              "reverb_room": 0.33
+              "volume": 0.12
             },
             {
               "duration": 2,
@@ -586,11 +584,11 @@
               "duration": 20,
               "fade_out": 4,
               "pan": -0.82,
+              "reverb_room": 0.33,
+              "reverb_wet": 0.26,
               "sound": "radio_i_double_dare_you",
               "start": 42,
-              "volume": 0.16,
-              "reverb_wet": 0.26,
-              "reverb_room": 0.33
+              "volume": 0.16
             },
             {
               "pan": 0.63,
@@ -669,11 +667,11 @@
               "volume": 0.82
             },
             {
+              "filter": 0,
+              "pan": -0.81,
               "sound": "sf_airplane",
               "start": 16,
-              "volume": 0.38,
-              "filter": 0,
-              "pan": -0.81
+              "volume": 0.38
             },
             {
               "sound": "sf_switch",
@@ -681,11 +679,11 @@
               "volume": 1
             },
             {
+              "reverb_room": 0.31,
+              "reverb_wet": 0.19,
               "sound": "sf_switch",
               "start": 8,
-              "volume": 0.69,
-              "reverb_wet": 0.19,
-              "reverb_room": 0.31
+              "volume": 0.69
             }
           ],
           "id": "id_icaq2hc",
@@ -723,7 +721,7 @@
               "reverb_wet": 0.21,
               "sound": "jimmy_fiona_says_yes",
               "start": 7.5,
-              "volume": 0.87
+              "volume": 0.49
             },
             {
               "sound": "sf_walking_on_wooden_floor",
@@ -738,8 +736,8 @@
               "reverb_room": 0.31,
               "reverb_wet": 0.14,
               "sound": "radio_glen_island_hop",
-              "start": 17,
-              "volume": 0.44
+              "start": 29,
+              "volume": 0.14
             },
             {
               "pan": -0.22,
@@ -753,6 +751,18 @@
               "sound": "sf_car_paqssing",
               "start": 30,
               "volume": 0.6
+            },
+            {
+              "sound": "sf_up_stairs",
+              "start": 12,
+              "volume": 1
+            },
+            {
+              "sound": "sf_switch",
+              "start": 28.5,
+              "volume": 0.62,
+              "reverb_wet": 0.23,
+              "reverb_room": 0.31
             }
           ],
           "id": "id_k8kz3rg",
@@ -800,8 +810,8 @@
       "loops": [
         {
           "id": "loop_2",
-          "sound": "ambient_night",
-          "volume": 1
+          "sound": "loop_rain",
+          "volume": 0.56
         }
       ],
       "scenes": [
@@ -822,15 +832,23 @@
             {
               "fade_in": 3,
               "fade_out": 4,
-              "reverb_wet": 0.2,
+              "reverb_room": 0.1,
+              "reverb_wet": 0,
               "sound": "sf_steam_train_passing",
               "start": 11,
-              "volume": 0.55
+              "volume": 1
             },
             {
-              "sound": "sf_train_bell_signals",
-              "start": 32,
-              "volume": 0.45
+              "reverb_room": 0.44,
+              "reverb_wet": 0.26,
+              "sound": "sf_happy_whistle",
+              "start": 43.5,
+              "volume": 0.26
+            },
+            {
+              "sound": "sf_walking_on_wooden_floor",
+              "start": 37,
+              "volume": 0.8
             }
           ],
           "id": "id_nt1gx4z",
@@ -842,24 +860,15 @@
           "events": [
             {
               "pan": 0.78,
-              "reverb_wet": 0.38,
+              "reverb_wet": 0,
               "sound": "sf_dog_barking",
               "start": 3,
-              "volume": 0.18
+              "volume": 0.35
             },
             {
-              "pan": -0.45,
-              "reverb_wet": 0.32,
-              "sound": "sf_man_whistling",
-              "start": 9,
-              "volume": 0.11
-            },
-            {
-              "pan": 0.5,
-              "reverb_wet": 0.35,
-              "sound": "sf_station_whistle_long",
-              "start": 22,
-              "volume": 0.25
+              "sound": "sf_train_whisltle_and_passing_by",
+              "start": 17,
+              "volume": 1
             }
           ],
           "id": "id_nt2rx8k",
@@ -872,10 +881,10 @@
             {
               "fade_in": 4,
               "fade_out": 5,
-              "reverb_wet": 0.18,
+              "reverb_wet": 0,
               "sound": "sf_cool_train_passing",
               "start": 5,
-              "volume": 0.6
+              "volume": 0.87
             },
             {
               "pan": -0.5,
@@ -883,12 +892,103 @@
               "sound": "sf_train_whistle_3_2",
               "start": 2,
               "volume": 0.55
+            },
+            {
+              "sound": "sf_door_open",
+              "start": 15,
+              "volume": 1
+            },
+            {
+              "sound": "radio_glen_island_hop",
+              "start": 45,
+              "volume": 0.29
+            },
+            {
+              "duration": 5,
+              "sound": "sf_radio_tuning",
+              "start": 40,
+              "volume": 1
+            },
+            {
+              "sound": "sf_walking_on_wooden_floor",
+              "start": 30,
+              "volume": 1
             }
           ],
           "id": "id_nt3mw2p",
           "max_interval": 600,
           "min_interval": 240,
           "name": "Night express"
+        },
+        {
+          "events": [
+            {
+              "duration": 5,
+              "pan": 0.67,
+              "reverb_room": 0.19,
+              "reverb_wet": 0.13,
+              "sound": "sf_up_stairs",
+              "start": 22.5,
+              "volume": 0.91
+            },
+            {
+              "sound": "sf_door_open",
+              "start": 26.5,
+              "volume": 1
+            },
+            {
+              "duration": 5.5,
+              "reverb_room": 0.29,
+              "reverb_wet": 0.2,
+              "sound": "sf_dog_barking",
+              "start": 40.5,
+              "volume": 0.24
+            },
+            {
+              "duration": 120,
+              "fade_out": 4,
+              "pan": -0.84,
+              "sound": "radio_they_say",
+              "start": 7,
+              "volume": 0.14
+            },
+            {
+              "duration": 23,
+              "pan": 0.78,
+              "reverb_room": 0.27,
+              "reverb_wet": 0.2,
+              "sound": "jimmy_tells_rashid_about_f",
+              "start": 0,
+              "volume": 1
+            },
+            {
+              "fade_in": 1,
+              "fade_out": 0,
+              "offset": 24,
+              "pan": -0.4,
+              "reverb_room": 0,
+              "reverb_wet": 0,
+              "sound": "jimmy_tells_rashid_about_f",
+              "start": 34,
+              "volume": 1
+            },
+            {
+              "sound": "sf_up_stairs",
+              "start": 22,
+              "volume": 1
+            },
+            {
+              "reverb_room": 0.58,
+              "reverb_wet": 0.17,
+              "sound": "sf_train_whistle_3_2",
+              "start": 87.5,
+              "volume": 0.15
+            }
+          ],
+          "id": "id_nqk81qv",
+          "max_interval": 60,
+          "min_interval": 0,
+          "name": "Jimmy Tells Oliver the Big News"
         }
       ]
     }
@@ -972,8 +1072,20 @@
       "pan": 0,
       "volume": 1
     },
+    "jimmy_tells_rashid_about_f": {
+      "file": "[Jimmy tells Rashid about F.mp3",
+      "filter": 0,
+      "pan": 0,
+      "volume": 1
+    },
     "juimmy_complaint_to_the_office": {
       "file": "[Juimmy] complaint to the office.mp3",
+      "filter": 0,
+      "pan": 0,
+      "volume": 1
+    },
+    "loop_rain": {
+      "file": "[loop] rain.wav",
       "filter": 0,
       "pan": 0,
       "volume": 1
@@ -1104,6 +1216,24 @@
       "pan": 0,
       "volume": 1
     },
+    "sf_fire_1_with_match": {
+      "file": "[SF] fire 1 with match.flac",
+      "filter": 0,
+      "pan": 0,
+      "volume": 1
+    },
+    "sf_fire_3": {
+      "file": "[SF] fire 3.wav",
+      "filter": 0,
+      "pan": 0,
+      "volume": 1
+    },
+    "sf_happy_whistle": {
+      "file": "[SF] happy whistle.mp3",
+      "filter": 0,
+      "pan": 0,
+      "volume": 1
+    },
     "sf_making_tea": {
       "file": "[SF] making-tea.wav",
       "filter": 0,
@@ -1112,6 +1242,12 @@
     },
     "sf_man_whistling": {
       "file": "[SF] man-whistling.wav",
+      "filter": 0,
+      "pan": 0,
+      "volume": 1
+    },
+    "sf_pi_is_up": {
+      "file": "[SF]Pi is up.mp3",
       "filter": 0,
       "pan": 0,
       "volume": 1
@@ -1206,6 +1342,12 @@
       "pan": 0,
       "volume": 1
     },
+    "sf_up_stairs": {
+      "file": "[SF] up stairs.wav",
+      "filter": 0,
+      "pan": 0,
+      "volume": 1
+    },
     "sf_walking_on_wooden_floor": {
       "file": "[SF] walking-on-wooden-floor.mp3",
       "filter": 0,
@@ -1217,18 +1359,6 @@
       "filter": 0,
       "pan": 0,
       "volume": 1
-    },
-    "sf_fire_3": {
-      "file": "[SF] fire 3.wav",
-      "volume": 1.0,
-      "pan": 0.0,
-      "filter": 0
-    },
-    "sf_pi_is_up": {
-      "file": "[SF]Pi is up.mp3",
-      "volume": 1.0,
-      "pan": 0.0,
-      "filter": 0
     }
   }
 }

@@ -232,9 +232,8 @@
     /* Toggle switch — retro brass style */
     .toggle-sw {
       position: relative; width: 38px; height: 23px;
-      flex-shrink: 0; cursor: pointer;
+      flex-shrink: 0; cursor: pointer; -webkit-user-select: none; user-select: none;
     }
-    .toggle-sw input { opacity: 0; width: 0; height: 0; position: absolute; }
     .toggle-track {
       position: absolute; inset: 0;
       background: var(--bg4); border: 1px solid var(--sep); border-radius: 2px;
@@ -247,8 +246,8 @@
       background: var(--text2); border-radius: 1px;
       transition: transform 0.2s;
     }
-    .toggle-sw input:checked + .toggle-track { background: rgba(58,154,58,0.25); border-color: #3a7a20; }
-    .toggle-sw input:checked + .toggle-track::before { transform: translateX(16px); background: #5abf5a; }
+    .toggle-sw.on .toggle-track { background: rgba(58,154,58,0.25); border-color: #3a7a20; }
+    .toggle-sw.on .toggle-track::before { transform: translateX(16px); background: #5abf5a; }
 
     /* Sliders */
     .slider-row { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
@@ -300,6 +299,7 @@
       letter-spacing: 0.04em;
       padding: 5px 10px;
       cursor: pointer; white-space: nowrap; flex-shrink: 0;
+      user-select: none; -webkit-user-select: none;
       transition: background 0.15s, color 0.15s;
     }
     .scene-btn:active { background: var(--bg4); }
@@ -360,10 +360,9 @@
       <div class="led-header">
         <div class="led-dot" id="dot-ceiling_upper"></div>
         <span class="led-name">Upper</span>
-        <label class="toggle-sw">
-          <input type="checkbox" id="led-ceiling_upper" onchange="onLedToggle('ceiling_upper',this.checked)">
+        <div class="toggle-sw" id="tog-ceiling_upper" ontouchstart="tapToggle(event,'ceiling_upper')">
           <span class="toggle-track"></span>
-        </label>
+        </div>
       </div>
       <div class="slider-row">
         <span class="slider-lbl">Bright</span>
@@ -392,10 +391,9 @@
       <div class="led-header">
         <div class="led-dot" id="dot-ceiling_lower"></div>
         <span class="led-name">Lower</span>
-        <label class="toggle-sw">
-          <input type="checkbox" id="led-ceiling_lower" onchange="onLedToggle('ceiling_lower',this.checked)">
+        <div class="toggle-sw" id="tog-ceiling_lower" ontouchstart="tapToggle(event,'ceiling_lower')">
           <span class="toggle-track"></span>
-        </label>
+        </div>
       </div>
       <div class="slider-row">
         <span class="slider-lbl">Bright</span>
@@ -424,10 +422,9 @@
       <div class="led-header">
         <div class="led-dot fire" id="dot-stove"></div>
         <span class="led-name">Stove</span>
-        <label class="toggle-sw">
-          <input type="checkbox" id="led-stove" onchange="onLedToggle('stove',this.checked)">
+        <div class="toggle-sw" id="tog-stove" ontouchstart="tapToggle(event,'stove')">
           <span class="toggle-track"></span>
-        </label>
+        </div>
       </div>
       <div class="slider-row">
         <span class="slider-lbl">Bright</span>
@@ -462,10 +459,9 @@
       <div class="led-header">
         <div class="led-dot" id="dot-exterior"></div>
         <span class="led-name">Outside</span>
-        <label class="toggle-sw">
-          <input type="checkbox" id="led-exterior" onchange="onLedToggle('exterior',this.checked)">
+        <div class="toggle-sw" id="tog-exterior" ontouchstart="tapToggle(event,'exterior')">
           <span class="toggle-track"></span>
-        </label>
+        </div>
       </div>
       <div class="slider-row">
         <span class="slider-lbl">Bright</span>
@@ -533,6 +529,7 @@ async function init() {
   renderLeds();
   renderScenes();
   startSimPoll();
+  silenceAllButtons();
 }
 
 function switchAtmo(name) {
@@ -686,7 +683,7 @@ function renderLeds() {
   for (const ch of ['ceiling_upper', 'ceiling_lower', 'stove', 'exterior']) {
     const led = leds[ch] || {brightness: 100, flicker: false, flicker_speed: 2, flicker_depth: 40};
     const flkOn = !!led.flicker;
-    document.getElementById('led-'      + ch).checked = !!led.enabled;
+    document.getElementById('tog-'      + ch)?.classList.toggle('on', !!led.enabled);
     document.getElementById('flk-'      + ch).classList.toggle('active', flkOn);
     document.getElementById('fx-'       + ch).classList.toggle('active', flkOn);
     const brt = led.brightness ?? 100;
@@ -714,6 +711,14 @@ function updateLedDot(channel, led) {
   dot.classList.toggle('flicker', flk);
   dot.style.setProperty('--fdur', (2 / spd).toFixed(2) + 's');
   dot.style.setProperty('--flo',  (1 - dep / 100).toFixed(2));
+}
+
+function tapToggle(e, channel) {
+  e.preventDefault();
+  const tog = document.getElementById('tog-' + channel);
+  const newState = !tog.classList.contains('on');
+  tog.classList.toggle('on', newState);
+  onLedToggle(channel, newState);
 }
 
 function onLedToggle(channel, checked) {
@@ -781,11 +786,19 @@ function renderScenes() {
   const scenes = cfg.atmospheres?.[atmo]?.scenes || [];
   strip.innerHTML = `<span class="scene-strip-label">Fire →</span>`;
   for (const scene of scenes) {
-    const btn = document.createElement('button');
+    const btn = document.createElement('div');
     btn.className        = 'scene-btn';
     btn.dataset.sceneId  = scene.id;
     btn.textContent      = scene.name || scene.id;
-    btn.onclick          = () => fireScene(scene.id, btn);
+    let _ts = null;
+    btn.addEventListener('touchstart', e => { _ts = {x: e.touches[0].clientX, y: e.touches[0].clientY}; }, {passive: true});
+    btn.addEventListener('touchend', e => {
+      if (!_ts) return;
+      const dx = e.changedTouches[0].clientX - _ts.x;
+      const dy = e.changedTouches[0].clientY - _ts.y;
+      _ts = null;
+      if (dx*dx + dy*dy < 100) fireScene(scene.id, btn);
+    }, {passive: true});
     strip.appendChild(btn);
   }
 }
@@ -854,6 +867,26 @@ async function pollPiHealth() {
 }
 pollPiHealth();
 setInterval(pollPiHealth, 5000);
+
+function silenceBtn(btn) {
+  if (btn._sh) return;
+  btn._sh = true;
+  let active = false;
+  btn.addEventListener('touchstart', e => {
+    e.preventDefault();
+    active = true;
+  }, {passive: false});
+  btn.addEventListener('touchend', () => {
+    if (!active) return;
+    active = false;
+    btn.click();
+  }, {passive: true});
+  btn.addEventListener('touchcancel', () => { active = false; }, {passive: true});
+}
+
+function silenceAllButtons() {
+  document.querySelectorAll('button').forEach(silenceBtn);
+}
 
 init();
 

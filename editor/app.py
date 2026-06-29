@@ -807,6 +807,15 @@ def preview_status():
     return jsonify(_preview_state)
 
 
+@app.route("/api/debug/mixer")
+def debug_mixer():
+    channels = []
+    for i in range(10):
+        ch = pygame.mixer.Channel(i)
+        channels.append({"ch": i, "busy": ch.get_busy(), "vol": _channel_volumes.get(i)})
+    return jsonify({"initialized": pygame.mixer.get_init(), "channels": channels, "master_vol": _master_volume})
+
+
 @app.route("/api/preview/stop", methods=["POST"])
 def stop_preview():
     _stop_preview.set()
@@ -986,6 +995,33 @@ def set_atmosphere():
     return jsonify({"ok": True, "atmosphere": atmo})
 
 
+@app.route("/api/shutdown", methods=["POST"])
+def api_shutdown():
+    if _GPIO_AVAILABLE:
+        return jsonify({"error": "shutdown only available on Mac"}), 403
+    import signal as _sig
+    threading.Thread(target=lambda: (time.sleep(0.3), os.kill(os.getpid(), _sig.SIGTERM)), daemon=True).start()
+    return jsonify({"ok": True})
+
+
+@app.route("/api/restart", methods=["POST"])
+def api_restart():
+    if _GPIO_AVAILABLE:
+        return jsonify({"error": "restart only available on Mac"}), 403
+    import signal as _sig
+    def _do_restart():
+        time.sleep(0.5)
+        subprocess.Popen(
+            ["bash", "/Users/willem-jan/signalbox-start.sh"],
+            stdout=open("/tmp/signalbox-editor.log", "a"),
+            stderr=subprocess.STDOUT,
+            start_new_session=True,
+        )
+        os.kill(os.getpid(), _sig.SIGTERM)
+    threading.Thread(target=_do_restart, daemon=True).start()
+    return jsonify({"ok": True})
+
+
 @app.route("/api/sync", methods=["POST"])
 def api_sync():
     if _GPIO_AVAILABLE:
@@ -1022,6 +1058,9 @@ if __name__ == "__main__":
     _stove_sound_thread = threading.Thread(target=_stove_sound_loop, daemon=True)
     _stove_sound_thread.start()
     atexit.register(_cleanup_leds)
+
+    if _AUDIO_AVAILABLE and not _GPIO_AVAILABLE:
+        _start_loops("day", cfg0)
 
     def _play_startup_chime():
         time.sleep(2)
