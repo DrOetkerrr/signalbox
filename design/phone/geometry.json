@@ -178,5 +178,182 @@
     "family": "Oswald",
     "licence": "SIL OFL 1.1",
     "bundled": "static/phone/fonts/"
+  },
+  "pages": {
+    "_comment": "Swipeable pages: index 0 is the main panel, 1..4 the lamp pages. Each lamp page drives its own GPIO channel so every light is commanded individually.",
+    "lamp_background": {
+      "img": "lamp-panel",
+      "x": -1.13,
+      "y": -2.0,
+      "w": 392.27,
+      "h": 848.0
+    },
+    "lamp_common": {
+      "toggle": {
+        "off": {
+          "img": "led-off",
+          "x": 304.85,
+          "y": 336.33,
+          "w": 43.64,
+          "h": 54.0
+        },
+        "on": {
+          "img": "led-on",
+          "x": 304.85,
+          "y": 345.09,
+          "w": 42.89,
+          "h": 47.2
+        }
+      },
+      "knobs": {
+        "brightness": {
+          "cx": 52.7,
+          "cy": 593.0,
+          "size": 53.1
+        },
+        "flicker_speed": {
+          "cx": 147.6,
+          "cy": 592.5,
+          "size": 53.1
+        },
+        "flicker_depth": {
+          "cx": 243.5,
+          "cy": 592.1,
+          "size": 53.1
+        },
+        "sound": {
+          "cx": 338.5,
+          "cy": 593.1,
+          "size": 53.1
+        }
+      },
+      "knob_dial": {
+        "img": "knob",
+        "base_rotation_deg": -135.33,
+        "zero_bearing_deg": 134.67,
+        "sweep_deg": 270.0
+      },
+      "name_label": {
+        "x": 290.0,
+        "y": 236.0,
+        "w": 92.0,
+        "h": 22.0,
+        "size": 16.0,
+        "mask": "#0f0f0c"
+      },
+      "page_label": {
+        "x": 148.0,
+        "y": 716.0,
+        "w": 96.0,
+        "h": 17.0,
+        "size": 11.5,
+        "mask": "#111109"
+      },
+      "dots": {
+        "xs": [
+          165.6,
+          185.4,
+          205.2,
+          225.0
+        ],
+        "y": 705.7,
+        "r": 4.6
+      },
+      "arrow_left": {
+        "x": 18.0,
+        "y": 683.0,
+        "w": 84.0,
+        "h": 48.0
+      },
+      "arrow_right": {
+        "x": 288.0,
+        "y": 683.0,
+        "w": 84.0,
+        "h": 48.0
+      },
+      "status_strip": {
+        "_comment": "Fixed summary of three channels printed into the artwork. Ring is lit by the channel's own brightness; the value line is painted over the printed 'ON ---%'.",
+        "ring_r": 15.2,
+        "ring_y": 151.1,
+        "value": {
+          "y": 173.0,
+          "h": 15.0,
+          "w": 52.0,
+          "size": 11.5,
+          "mask": "#131310"
+        },
+        "cells": [
+          {
+            "label": "UPPER CEILING",
+            "channel": "ceiling_upper",
+            "cx": 72.5
+          },
+          {
+            "label": "LOWER CEILING",
+            "channel": "ceiling_lower",
+            "cx": 194.1
+          },
+          {
+            "label": "EXTERIOR",
+            "channel": "exterior",
+            "cx": 316.2
+          }
+        ]
+      }
+    },
+    "lamps": [
+      {
+        "n": 1,
+        "name": "OUTSIDE",
+        "channel": "exterior",
+        "photo": "photo-1",
+        "frame": {
+          "x": 6.0,
+          "y": 206.0,
+          "w": 259.85,
+          "h": 293.0
+        },
+        "sound": false
+      },
+      {
+        "n": 2,
+        "name": "LAMP",
+        "channel": "ceiling_upper",
+        "photo": "photo-2",
+        "frame": {
+          "x": 5.0,
+          "y": 205.0,
+          "w": 258.89,
+          "h": 298.0
+        },
+        "sound": false
+      },
+      {
+        "n": 3,
+        "name": "STOVE",
+        "channel": "stove",
+        "photo": "photo-3",
+        "frame": {
+          "x": 25.0,
+          "y": 218.0,
+          "w": 221.64,
+          "h": 265.0
+        },
+        "sound": true
+      },
+      {
+        "n": 4,
+        "name": "LANTERN",
+        "channel": "ceiling_lower",
+        "photo": "photo-4",
+        "frame": {
+          "x": 5.0,
+          "y": 203.0,
+          "w": 261.31,
+          "h": 297.0
+        },
+        "sound": false
+      }
+    ]
   }
 }

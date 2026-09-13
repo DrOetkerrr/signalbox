@@ -16,9 +16,28 @@
   }
   #stage {
     position:absolute; width:390px; height:844px; transform-origin:0 0;
-    left:0; top:0; will-change:transform;
+    left:0; top:0; will-change:transform; overflow:hidden;
   }
-  #panel { position:absolute; left:-2.54px; top:-2px; width:392.66px; height:845.85px; }
+  /* One horizontal track of full-width pages; swipe moves the track. */
+  #track { position:absolute; left:0; top:0; height:844px; will-change:transform; }
+  .page { position:absolute; top:0; width:390px; height:844px; overflow:hidden; }
+  .page-bg { position:absolute; display:block; }
+  .photo { position:absolute; display:block; object-fit:cover; }
+  .lbl {
+    position:absolute; color:#c1b29e; text-align:center;
+    font-weight:500; letter-spacing:.06em; white-space:nowrap;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .dot { position:absolute; border-radius:50%; background:#71685d; }
+  .ring-glow { position:absolute; border-radius:50%; pointer-events:none; transition:opacity .25s; }
+  .strip-val {
+    position:absolute; display:flex; align-items:center; justify-content:center;
+    color:#c1b29e; font-weight:500; letter-spacing:.08em; white-space:nowrap;
+  }
+  .dot.on { background:#fdf3df; }
+  .knob-wrap { position:absolute; touch-action:none; cursor:grab; }
+  .knob-wrap img { width:100%; height:100%; display:block; will-change:transform; }
+  .knob-wrap.inert { opacity:.45; pointer-events:none; }
   .ctl { position:absolute; display:block; }
   .ctl img { width:100%; height:100%; display:block; pointer-events:none; }
   .ctl.hit, .pad { cursor:pointer; touch-action:none; }
@@ -60,8 +79,9 @@
   .pad { position:absolute; }
 </style>
 
-<div id="stage">
-  <img id="panel" src="{{ url_for('static', filename='phone/img/panel.webp') }}" alt="">
+<div id="stage"><div id="track"><div class="page" id="page-0" style="left:0">
+  <img id="panel" class="page-bg" style="left:-2.54px; top:-2px; width:392.66px; height:845.85px"
+       src="{{ url_for('static', filename='phone/img/panel.webp') }}" alt="">
 
   <!-- Pi connection lamp (indicator only) -->
   <div class="ctl" id="pi-lamp"></div>
@@ -88,7 +108,7 @@
   <!-- Utilities -->
   <div class="ctl hit" id="led"></div>
   <div class="ctl hit" id="reboot"></div>
-</div>
+</div></div></div>
 
 <script>
 const G = {{ geometry | tojson }};
@@ -168,12 +188,13 @@ function knobFromPoint(p) {
   return degToPct(rel);
 }
 function sendVolume() {
+  hold();
   clearTimeout(volPending);
   volPending = setTimeout(() => api('/api/volume', {volume: volume/100}), 90);
 }
 kw.addEventListener('pointerdown', e => {
   e.preventDefault(); volDrag = true;
-  kw.setPointerCapture && kw.setPointerCapture(e.pointerId);
+  capture(kw, e);
   volume = knobFromPoint(stagePoint(e)); drawKnob(); sendVolume();
 });
 kw.addEventListener('pointermove', e => {
@@ -181,6 +202,12 @@ kw.addEventListener('pointermove', e => {
   volume = knobFromPoint(stagePoint(e)); drawKnob(); sendVolume();
 });
 ['pointerup','pointercancel'].forEach(t => kw.addEventListener(t, () => { volDrag = false; }));
+
+// Pointer capture keeps a drag alive when the finger leaves the control, but it
+// throws if the pointer is no longer active — never let that abort the handler.
+function capture(el, e) {
+  try { el.setPointerCapture && el.setPointerCapture(e.pointerId); } catch (_) {}
+}
 
 /* ── api helper ────────────────────────────────────────────────────────────── */
 async function api(path, body) {
@@ -198,7 +225,12 @@ const get = p => fetch(p).then(r => r.json());
 
 /* ── UI state ──────────────────────────────────────────────────────────────── */
 let atmo = 'day', playing = false, paused = false, ledTest = false, online = false;
-let rebooting = false;
+let rebooting = false, blinkOn = false, sawOffline = false, rebootStarted = 0;
+const REBOOT_BLINK_MS = 550, REBOOT_GIVE_UP_MS = 150000;
+setInterval(() => {
+  if (!rebooting) { if (blinkOn) { blinkOn = false; render(); } return; }
+  blinkOn = !blinkOn; render();
+}, REBOOT_BLINK_MS);
 // After a tap, trust the UI for a moment so the status poll can't undo it
 // before the server has caught up.
 let holdUntil = 0;
@@ -215,8 +247,10 @@ function render() {
   setState('pause',   G.controls.pause[paused            ? 'on' : 'off']);
   setState('stop',    G.controls.stop [!playing && !paused ? 'on' : 'off']);
   setState('led',     G.controls.led_test[ledTest ? 'on' : 'off']);
-  setState('reboot',  G.controls.reboot[rebooting ? 'on' : 'off']);
+  // The reboot lamp blinks steadily while the Pi restarts, and is out otherwise.
+  setState('reboot',  G.controls.reboot[(rebooting && blinkOn) ? 'on' : 'off']);
   drawKnob();
+  renderLamps();
 }
 
 function press(el, fn) {
@@ -226,7 +260,7 @@ function press(el, fn) {
   // stops scrolling and selection on the phone.
   el.addEventListener('pointerdown', e => {
     armed = true;
-    el.setPointerCapture && el.setPointerCapture(e.pointerId);
+    capture(el, e);
     el.classList.add('press');
   });
   el.addEventListener('pointerup', () => {
@@ -270,14 +304,26 @@ press(byId('led'), async () => {
   }
 });
 press(byId('reboot'), async () => {
-  rebooting = true; hold(12000); render();
-  flash('Rebooting…', 12000);
+  rebooting = true; blinkOn = true; sawOffline = false; rebootStarted = Date.now();
+  hold(4000); render();
   const res = await api('/api/reboot');
   if (res._ok === false) {
-    rebooting = false; holdUntil = 0; render();
+    rebooting = false; blinkOn = false; holdUntil = 0; render();
     flash(res.error || 'Reboot unavailable');
   }
 });
+
+// The Pi drops off the network, then comes back. Stop blinking once we have seen
+// it go and return — or give up after a couple of minutes.
+function trackReboot(reachable) {
+  if (!rebooting) return;
+  if (!reachable) { sawOffline = true; return; }
+  if (sawOffline && Date.now() - rebootStarted > 4000) {
+    rebooting = false; blinkOn = false; flash('Back online');
+  } else if (Date.now() - rebootStarted > REBOOT_GIVE_UP_MS) {
+    rebooting = false; blinkOn = false;
+  }
+}
 
 /* ── the display window ────────────────────────────────────────────────────── */
 const fmt = s => { s = Math.max(0, Math.round(s)); return Math.floor(s/60) + ':' + String(s%60).padStart(2,'0'); };
@@ -302,6 +348,267 @@ function showIdle(msg) {
   byId('bar-fill').style.width = '0%'; byId('win-time').textContent = '';
 }
 
+
+/* ── lamp pages: built from geometry, one per wired channel ────────────────── */
+const P = G.pages, LC = P.lamp_common, LAMPS = P.lamps;
+const PAGE_W = G.artboard.w, PAGE_COUNT = 1 + LAMPS.length;
+const track = document.getElementById('track');
+track.style.width = (PAGE_W * PAGE_COUNT) + 'px';
+
+// live values per channel, mirrored from the server
+const lampState = {};
+LAMPS.forEach(l => lampState[l.channel] = {enabled:false, brightness:70, flicker_speed:2, flicker_depth:40});
+let stoveVolume = 100;
+
+function el(tag, cls, style, parent) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (style) Object.assign(e.style, style);
+  if (parent) parent.appendChild(e);
+  return e;
+}
+const pxs = o => Object.fromEntries(Object.entries(o).map(([k,v]) => [k, v+'px']));
+
+function buildLampPage(lamp, index) {
+  const page = el('div', 'page', {left: (PAGE_W*index)+'px'}, track);
+  page.id = 'page-' + index;
+
+  const bg = el('img', 'page-bg', pxs({left:P.lamp_background.x, top:P.lamp_background.y,
+                                       width:P.lamp_background.w, height:P.lamp_background.h}), page);
+  bg.src = IMG + P.lamp_background.img + '.webp'; bg.alt = '';
+
+  const ph = el('img', 'photo', pxs({left:lamp.frame.x, top:lamp.frame.y,
+                                     width:lamp.frame.w, height:lamp.frame.h}), page);
+  ph.src = IMG + lamp.photo + '.webp'; ph.alt = '';
+
+  // labels painted over the masked areas of the artwork
+  const nm = el('div', 'lbl', {...pxs({left:LC.name_label.x, top:LC.name_label.y,
+                                       width:LC.name_label.w, height:LC.name_label.h}),
+                               fontSize: LC.name_label.size+'px',
+                               background: LC.name_label.mask}, page);
+  nm.textContent = lamp.name;
+  const pl = el('div', 'lbl', {...pxs({left:LC.page_label.x, top:LC.page_label.y,
+                                       width:LC.page_label.w, height:LC.page_label.h}),
+                               fontSize: LC.page_label.size+'px',
+                               background: LC.page_label.mask}, page);
+  pl.textContent = `${lamp.n}/${LAMPS.length}  ${lamp.name.charAt(0)+lamp.name.slice(1).toLowerCase()}`;
+
+  // page dots, drawn over the ones printed in the artwork
+  LC.dots.xs.forEach((x, i) => {
+    const d = el('div', 'dot' + (i === lamp.n-1 ? ' on' : ''),
+                 pxs({left:x-LC.dots.r, top:LC.dots.y-LC.dots.r, width:LC.dots.r*2, height:LC.dots.r*2}), page);
+    d.dataset.dot = i;
+  });
+
+  // arrows
+  const la = el('div', '', {...pxs(LC.arrow_left), position:'absolute', cursor:'pointer'}, page);
+  Object.assign(la.style, pxs({left:LC.arrow_left.x, top:LC.arrow_left.y, width:LC.arrow_left.w, height:LC.arrow_left.h}));
+  press(la, () => goTo(index - 1));
+  const ra = el('div', '', {position:'absolute', cursor:'pointer'}, page);
+  Object.assign(ra.style, pxs({left:LC.arrow_right.x, top:LC.arrow_right.y, width:LC.arrow_right.w, height:LC.arrow_right.h}));
+  press(ra, () => goTo(index + 1));
+
+  // status strip: three channels summarised at the top of every lamp page
+  const SS = LC.status_strip;
+  SS.cells.forEach(cell => {
+    const r = SS.ring_r;
+    el('div', 'ring-glow', pxs({left:cell.cx-r, top:SS.ring_y-r, width:r*2, height:r*2}), page)
+      .dataset.glow = cell.channel;
+    const v = el('div', 'strip-val', {...pxs({left:cell.cx-SS.value.w/2, top:SS.value.y,
+                                              width:SS.value.w, height:SS.value.h}),
+                                      fontSize:SS.value.size+'px', background:SS.value.mask}, page);
+    v.dataset.val = cell.channel;
+  });
+
+  // on/off lever
+  const tog = el('div', 'ctl hit', {}, page);
+  tog.id = 'lamp-toggle-' + lamp.channel;
+  press(tog, () => {
+    const st = lampState[lamp.channel];
+    st.enabled = !st.enabled; hold(); renderLamp(lamp);
+    sendLed(lamp.channel);
+  });
+
+  // four dials
+  const mk = (key, value, max, enabled) => {
+    const g = LC.knobs[key];
+    const w = el('div', 'knob-wrap' + (enabled ? '' : ' inert'),
+                 pxs({left:g.cx-g.size/2, top:g.cy-g.size/2, width:g.size, height:g.size}), page);
+    w.id = `knob-${lamp.channel}-${key}`;
+    const i = el('img', '', {}, w); i.src = IMG + LC.knob_dial.img + '.webp'; i.alt = '';
+    if (enabled) attachDial(w, g, v => onDial(lamp, key, v), () => dialValue(lamp, key));
+    else i.style.transform = `rotate(${LC.knob_dial.base_rotation_deg}deg)`;   // parked at zero
+    return w;
+  };
+  mk('brightness', 0, 100, true);
+  mk('flicker_speed', 0, 100, true);
+  mk('flicker_depth', 0, 100, true);
+  mk('sound', 0, 100, !!lamp.sound);
+
+  return page;
+}
+
+/* dial value <-> control value */
+function dialValue(lamp, key) {
+  const st = lampState[lamp.channel];
+  if (key === 'brightness')    return st.brightness;
+  if (key === 'flicker_depth') return st.flicker_depth;
+  if (key === 'flicker_speed') return (st.flicker_speed - 1) / 4 * 100;   // 1..5 -> 0..100
+  if (key === 'sound')         return stoveVolume;
+  return 0;
+}
+function onDial(lamp, key, pct) {
+  // Hold the UI briefly: without this the next status poll overwrites the value
+  // you are turning before the box has stored it.
+  hold();
+  const st = lampState[lamp.channel];
+  if (key === 'brightness')    st.brightness = Math.round(pct);
+  if (key === 'flicker_depth') { st.flicker_depth = Math.round(pct); }
+  if (key === 'flicker_speed') st.flicker_speed = +(1 + pct/100*4).toFixed(1);
+  if (key === 'sound')       { stoveVolume = Math.round(pct); queueStove(); return; }
+  sendLed(lamp.channel);
+}
+
+/* a dial: drag round it, 0 at the 135 deg mark, 270 deg clockwise to full */
+function attachDial(wrap, geo, onChange, getValue) {
+  const D = LC.knob_dial;
+  const img = wrap.querySelector('img');
+  wrap.dataset.draw = '1';
+  wrap.redraw = () => { img.style.transform = `rotate(${D.base_rotation_deg + getValue()/100*D.sweep_deg}deg)`; };
+  wrap.redraw();
+  let dragging = false;
+  const valueAt = e => {
+    // The visible page is translated flush with the stage, so stage coords are
+    // page-local coords for whichever page is on screen.
+    const p = stagePoint(e);
+    let bearing = Math.atan2(p.y - geo.cy, p.x - geo.cx) * 180/Math.PI;
+    let rel = ((bearing - D.zero_bearing_deg) % 360 + 360) % 360;
+    if (rel > D.sweep_deg) rel = (rel > (D.sweep_deg + 360)/2) ? 0 : D.sweep_deg;
+    return rel / D.sweep_deg * 100;
+  };
+  wrap.addEventListener('pointerdown', e => {
+    e.stopPropagation(); dragging = true;
+    capture(wrap, e);
+    onChange(valueAt(e)); wrap.redraw();
+  });
+  wrap.addEventListener('pointermove', e => {
+    if (!dragging) return; e.preventDefault(); e.stopPropagation();
+    onChange(valueAt(e)); wrap.redraw();
+  });
+  ['pointerup','pointercancel'].forEach(t => wrap.addEventListener(t, () => { dragging = false; }));
+}
+
+/* pushing changes to the box, coalesced */
+const ledTimers = {};
+function sendLed(channel) {
+  clearTimeout(ledTimers[channel]);
+  ledTimers[channel] = setTimeout(() => {
+    const st = lampState[channel];
+    api('/api/led', {atmosphere: atmo, channel,
+                     led: {enabled: st.enabled, brightness: st.brightness,
+                           flicker: st.flicker_depth > 0,
+                           flicker_speed: st.flicker_speed, flicker_depth: st.flicker_depth}});
+  }, 120);
+}
+let stoveTimer = null;
+function queueStove() {
+  clearTimeout(stoveTimer);
+  stoveTimer = setTimeout(() => api('/api/stove/volume', {volume: stoveVolume/100}), 120);
+}
+
+function renderLamp(lamp) {
+  const st = lampState[lamp.channel];
+  const tog = document.getElementById('lamp-toggle-' + lamp.channel);
+  if (tog) place(tog, LC.toggle[st.enabled ? 'on' : 'off']);
+  ['brightness','flicker_speed','flicker_depth','sound'].forEach(k => {
+    const w = document.getElementById(`knob-${lamp.channel}-${k}`);
+    if (w && w.redraw) w.redraw();
+  });
+}
+function renderLamps() { LAMPS.forEach(renderLamp); renderStrip(); }
+
+// The strip repeats on every lamp page, so update all copies.
+function renderStrip() {
+  const SS = LC.status_strip;
+  document.querySelectorAll('[data-glow]').forEach(g => {
+    const st = lampState[g.dataset.glow];
+    const lit = st && st.enabled && st.brightness > 0;
+    g.style.opacity = lit ? Math.max(.25, st.brightness/100) : 0;
+    g.style.background = lit
+      ? 'radial-gradient(circle, rgba(255,206,120,.95) 0%, rgba(226,150,48,.55) 55%, rgba(150,80,20,0) 78%)'
+      : 'none';
+  });
+  document.querySelectorAll('[data-val]').forEach(v => {
+    const st = lampState[v.dataset.val];
+    v.textContent = (st && st.enabled) ? `ON  ${Math.round(st.brightness)}%` : 'OFF';
+    v.style.color = (st && st.enabled) ? '#c1b29e' : '#6a6154';
+  });
+}
+
+// Take the box's own LED settings for the current atmosphere.
+function adoptLeds(leds, stoveVol) {
+  let changed = false;
+  LAMPS.forEach(l => {
+    const src = leds[l.channel]; if (!src) return;
+    const st = lampState[l.channel];
+    const next = {
+      enabled:       !!src.enabled,
+      brightness:    src.brightness ?? st.brightness,
+      flicker_speed: src.flicker_speed ?? st.flicker_speed,
+      flicker_depth: src.flicker ? (src.flicker_depth ?? st.flicker_depth) : 0,
+    };
+    for (const k in next) if (next[k] !== st[k]) { st[k] = next[k]; changed = true; }
+  });
+  if (typeof stoveVol === 'number') {
+    const v = Math.round(stoveVol * 100);
+    if (v !== stoveVolume) { stoveVolume = v; changed = true; }
+  }
+  if (changed) renderLamps();
+}
+
+/* ── swiping ───────────────────────────────────────────────────────────────── */
+let trackPage = 0, swipeFrom = 0, swiping = false, swipeStartX = 0, swipeStartY = 0, swipeLocked = null;
+function drawTrack(animate) {
+  track.style.transition = animate ? 'transform .28s cubic-bezier(.22,.61,.36,1)' : 'none';
+  track.style.transform = `translateX(${-trackPage * PAGE_W}px)`;
+}
+function goTo(i, animate = true) {
+  trackPage = Math.max(0, Math.min(PAGE_COUNT - 1, i));
+  drawTrack(animate);
+}
+const stageEl = document.getElementById('stage');
+stageEl.addEventListener('pointerdown', e => {
+  if (e.target.closest('.knob-wrap, .ctl.hit, .pad, #knob-wrap')) return;   // controls win
+  swiping = true; swipeLocked = null; swipeFrom = trackPage;
+  const p = stagePoint(e); swipeStartX = p.x; swipeStartY = p.y;
+});
+stageEl.addEventListener('pointermove', e => {
+  if (!swiping) return;
+  const p = stagePoint(e);
+  const dx = p.x - swipeStartX, dy = p.y - swipeStartY;
+  if (swipeLocked === null) {
+    if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+    swipeLocked = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y';
+  }
+  if (swipeLocked !== 'x') return;
+  e.preventDefault();
+  let off = swipeFrom * PAGE_W - dx;
+  off = Math.max(-60, Math.min((PAGE_COUNT-1)*PAGE_W + 60, off));   // rubber band at the ends
+  track.style.transition = 'none';
+  track.style.transform = `translateX(${-off}px)`;
+});
+['pointerup','pointercancel'].forEach(t => stageEl.addEventListener(t, e => {
+  if (!swiping) return;
+  swiping = false;
+  if (swipeLocked !== 'x') return;
+  const dx = stagePoint(e).x - swipeStartX;
+  const step = Math.abs(dx) > PAGE_W * 0.18 ? (dx < 0 ? 1 : -1) : 0;
+  goTo(swipeFrom + step);
+}));
+
+LAMPS.forEach((l, i) => buildLampPage(l, i + 1));
+drawTrack(false);
+
 /* ── polling ───────────────────────────────────────────────────────────────── */
 async function boot() {
   try {
@@ -310,6 +617,8 @@ async function boot() {
     if (!volDrag) { volume = Math.round((st.volume ?? .5) * 100); }
     const lt = await get('/api/led/test/status').catch(() => ({running:false}));
     ledTest = !!lt.running;
+    const ps = await get('/api/phone/status').catch(() => null);
+    if (ps && ps.leds) adoptLeds(ps.leds, ps.stove_volume);
   } catch { online = false; }
   render();
 }
@@ -317,16 +626,18 @@ async function tick() {
   try {
     const s = await get('/api/phone/status');
     const sim = s.simulate, pv = s.preview;
-    online = true;
+    online = true; trackReboot(true);
     if (!volDrag && typeof s.volume === 'number') {
       const v = Math.round(s.volume * 100);
       if (v !== volume) { volume = v; drawKnob(); }
     }
     if (typeof s.led_test === 'boolean' && !held()) ledTest = s.led_test;
+    if (s.leds && !held()) adoptLeds(s.leds, s.stove_volume);
     if (!held()) {
       if (sim.running !== playing && !paused) playing = sim.running;
       if (sim.atmosphere && sim.atmosphere !== atmo) atmo = sim.atmosphere;
     }
+    if (rebooting) { showIdle('Rebooting…'); render(); return; }
     if (Date.now() < flashUntil) { showIdle(flashMsg); render(); return; }
     if (pv.playing && pv.total > 0)      showScene(pv.scene_name || sim.scene_name || 'Playing', pv.elapsed || 0, pv.total);
     else if (sim.running && sim.mode === 'waiting') showWaiting(sim.scene_name, sim.next_in || 0);
@@ -334,8 +645,9 @@ async function tick() {
     else                                 showIdle();
     render();
   } catch {
+    trackReboot(false);
     if (online) { online = false; render(); }
-    showIdle(Date.now() < flashUntil ? flashMsg : null);
+    showIdle(rebooting ? 'Rebooting…' : (Date.now() < flashUntil ? flashMsg : null));
   }
 }
 boot().then(() => { tick(); setInterval(tick, 900); });

@@ -1192,6 +1192,7 @@ def phone_status():
         "volume":       _master_volume,
         "stove_volume": _stove_sound_volume,
         "led_test":     bool(_led_test_state.get("running")),
+        "leds":         _led_live_state.get(_current_atmosphere, {}),
         "simulate":     _simulate_state,
         "preview":      _preview_state,
         "audio":        _AUDIO_AVAILABLE,
