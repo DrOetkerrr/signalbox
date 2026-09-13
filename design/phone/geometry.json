@@ -199,10 +199,10 @@
         },
         "on": {
           "img": "led-on",
-          "x": 304.85,
-          "y": 345.09,
-          "w": 42.89,
-          "h": 47.2
+          "x": 304.9,
+          "y": 346.0,
+          "w": 43.99,
+          "h": 47.0
         }
       },
       "knobs": {
@@ -234,20 +234,36 @@
         "sweep_deg": 270.0
       },
       "name_label": {
-        "x": 290.0,
-        "y": 236.0,
-        "w": 92.0,
-        "h": 22.0,
-        "size": 16.0,
-        "mask": "#0f0f0c"
+        "text": {
+          "x": 270.0,
+          "y": 236.0,
+          "w": 96.0,
+          "h": 19.0,
+          "size": 16.0
+        },
+        "mask": {
+          "x": 286.0,
+          "y": 236.5,
+          "w": 64.0,
+          "h": 17.0,
+          "fill": "#0c0907"
+        }
       },
       "page_label": {
-        "x": 148.0,
-        "y": 716.0,
-        "w": 96.0,
-        "h": 17.0,
-        "size": 11.5,
-        "mask": "#111109"
+        "text": {
+          "x": 148.0,
+          "y": 718.0,
+          "w": 96.0,
+          "h": 16.0,
+          "size": 11.5
+        },
+        "mask": {
+          "x": 159.0,
+          "y": 720.0,
+          "w": 74.0,
+          "h": 16.0,
+          "fill": "#181512"
+        }
       },
       "dots": {
         "xs": [
@@ -272,33 +288,93 @@
         "h": 48.0
       },
       "status_strip": {
-        "_comment": "Fixed summary of three channels printed into the artwork. Ring is lit by the channel's own brightness; the value line is painted over the printed 'ON ---%'.",
-        "ring_r": 15.2,
-        "ring_y": 151.1,
-        "value": {
-          "y": 173.0,
-          "h": 15.0,
-          "w": 52.0,
-          "size": 11.5,
-          "mask": "#131310"
-        },
-        "cells": [
+        "_comment": "Three slots showing the other lamps. Indicator artwork has real off/on states; the label above each slot is painted over the printed one.",
+        "slots": [
           {
-            "label": "UPPER CEILING",
-            "channel": "ceiling_upper",
-            "cx": 72.5
+            "ind_off": {
+              "x": 57.66,
+              "y": 137.0,
+              "w": 30.28,
+              "h": 30.0
+            },
+            "ind_on": {
+              "x": 58.5,
+              "y": 138.0,
+              "w": 29.0,
+              "h": 29.0
+            },
+            "label": {
+              "x": 35.0,
+              "y": 117.0,
+              "w": 78.0,
+              "h": 15.0
+            },
+            "value": {
+              "x": 46.7,
+              "y": 173.5,
+              "w": 52.0,
+              "h": 14.0
+            }
           },
           {
-            "label": "LOWER CEILING",
-            "channel": "ceiling_lower",
-            "cx": 194.1
+            "ind_off": {
+              "x": 179.86,
+              "y": 137.0,
+              "w": 30.28,
+              "h": 30.0
+            },
+            "ind_on": {
+              "x": 180.7,
+              "y": 138.0,
+              "w": 29.0,
+              "h": 29.0
+            },
+            "label": {
+              "x": 152.6,
+              "y": 117.0,
+              "w": 78.0,
+              "h": 15.0
+            },
+            "value": {
+              "x": 168.8,
+              "y": 173.5,
+              "w": 52.0,
+              "h": 14.0
+            }
           },
           {
-            "label": "EXTERIOR",
-            "channel": "exterior",
-            "cx": 316.2
+            "ind_off": {
+              "x": 302.09,
+              "y": 137.0,
+              "w": 30.28,
+              "h": 30.0
+            },
+            "ind_on": {
+              "x": 302.93,
+              "y": 138.0,
+              "w": 29.0,
+              "h": 29.0
+            },
+            "label": {
+              "x": 275.0,
+              "y": 117.0,
+              "w": 78.0,
+              "h": 15.0
+            },
+            "value": {
+              "x": 291.1,
+              "y": 173.5,
+              "w": 52.0,
+              "h": 14.0
+            }
           }
-        ]
+        ],
+        "label_size": 10.5,
+        "label_mask": "#0c0907",
+        "img_off": "lamp-dark",
+        "img_on": "ind-on",
+        "value_size": 10.5,
+        "value_mask": "#131310"
       }
     },
     "lamps": [
@@ -313,7 +389,8 @@
           "w": 259.85,
           "h": 293.0
         },
-        "sound": false
+        "sound": false,
+        "strip_name": "OUTSIDE"
       },
       {
         "n": 2,
@@ -326,7 +403,8 @@
           "w": 258.89,
           "h": 298.0
         },
-        "sound": false
+        "sound": false,
+        "strip_name": "UPPER CEILING"
       },
       {
         "n": 3,
@@ -339,7 +417,8 @@
           "w": 221.64,
           "h": 265.0
         },
-        "sound": true
+        "sound": true,
+        "strip_name": "STOVE"
       },
       {
         "n": 4,
@@ -352,7 +431,8 @@
           "w": 261.31,
           "h": 297.0
         },
-        "sound": false
+        "sound": false,
+        "strip_name": "LANTERN"
       }
     ]
   }

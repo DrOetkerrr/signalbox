@@ -29,10 +29,11 @@
     display:flex; align-items:center; justify-content:center;
   }
   .dot { position:absolute; border-radius:50%; background:#71685d; }
-  .ring-glow { position:absolute; border-radius:50%; pointer-events:none; transition:opacity .25s; }
-  .strip-val {
+  .strip-ind { position:absolute; }
+  .strip-ind img { width:100%; height:100%; display:block; }
+  .strip-lbl {
     position:absolute; display:flex; align-items:center; justify-content:center;
-    color:#c1b29e; font-weight:500; letter-spacing:.08em; white-space:nowrap;
+    color:#c1b29e; font-weight:500; letter-spacing:.05em; white-space:nowrap;
   }
   .dot.on { background:#fdf3df; }
   .knob-wrap { position:absolute; touch-action:none; cursor:grab; }
@@ -382,16 +383,18 @@ function buildLampPage(lamp, index) {
   ph.src = IMG + lamp.photo + '.webp'; ph.alt = '';
 
   // labels painted over the masked areas of the artwork
-  const nm = el('div', 'lbl', {...pxs({left:LC.name_label.x, top:LC.name_label.y,
-                                       width:LC.name_label.w, height:LC.name_label.h}),
-                               fontSize: LC.name_label.size+'px',
-                               background: LC.name_label.mask}, page);
-  nm.textContent = lamp.name;
-  const pl = el('div', 'lbl', {...pxs({left:LC.page_label.x, top:LC.page_label.y,
-                                       width:LC.page_label.w, height:LC.page_label.h}),
-                               fontSize: LC.page_label.size+'px',
-                               background: LC.page_label.mask}, page);
-  pl.textContent = `${lamp.n}/${LAMPS.length}  ${lamp.name.charAt(0)+lamp.name.slice(1).toLowerCase()}`;
+  // Each label is a mask over the printed one, plus our own text on top.
+  const label = (spec, text) => {
+    el('div', '', {position:'absolute', background:spec.mask.fill,
+                   ...pxs({left:spec.mask.x, top:spec.mask.y,
+                           width:spec.mask.w, height:spec.mask.h})}, page);
+    const e = el('div', 'lbl', {...pxs({left:spec.text.x, top:spec.text.y,
+                                        width:spec.text.w, height:spec.text.h}),
+                                fontSize: spec.text.size+'px'}, page);
+    e.textContent = text;
+  };
+  label(LC.name_label, lamp.name);
+  label(LC.page_label, `${lamp.n}/${LAMPS.length}  ${lamp.name.charAt(0)+lamp.name.slice(1).toLowerCase()}`);
 
   // page dots, drawn over the ones printed in the artwork
   LC.dots.xs.forEach((x, i) => {
@@ -408,16 +411,29 @@ function buildLampPage(lamp, index) {
   Object.assign(ra.style, pxs({left:LC.arrow_right.x, top:LC.arrow_right.y, width:LC.arrow_right.w, height:LC.arrow_right.h}));
   press(ra, () => goTo(index + 1));
 
-  // status strip: three channels summarised at the top of every lamp page
+  // Status strip: the other three lamps, in page order, with their own indicator art.
   const SS = LC.status_strip;
-  SS.cells.forEach(cell => {
-    const r = SS.ring_r;
-    el('div', 'ring-glow', pxs({left:cell.cx-r, top:SS.ring_y-r, width:r*2, height:r*2}), page)
-      .dataset.glow = cell.channel;
-    const v = el('div', 'strip-val', {...pxs({left:cell.cx-SS.value.w/2, top:SS.value.y,
-                                              width:SS.value.w, height:SS.value.h}),
-                                      fontSize:SS.value.size+'px', background:SS.value.mask}, page);
-    v.dataset.val = cell.channel;
+  LAMPS.filter(o => o.n !== lamp.n).forEach((other, i) => {
+    const slot = SS.slots[i];
+    el('div', '', {position:'absolute', background:SS.label_mask,
+                   ...pxs({left:slot.label.x, top:slot.label.y,
+                           width:slot.label.w, height:slot.label.h})}, page);
+    const lb = el('div', 'strip-lbl', {...pxs({left:slot.label.x, top:slot.label.y,
+                                               width:slot.label.w, height:slot.label.h}),
+                                       fontSize:SS.label_size+'px'}, page);
+    lb.textContent = other.strip_name;
+    const ind = el('div', 'strip-ind', {}, page);
+    ind.dataset.ind = other.channel; ind.dataset.slot = i;
+    el('img', '', {}, ind);
+
+    // live reading over the printed "ON ---%"
+    el('div', '', {position:'absolute', background:SS.value_mask,
+                   ...pxs({left:slot.value.x, top:slot.value.y,
+                           width:slot.value.w, height:slot.value.h})}, page);
+    const val = el('div', 'strip-lbl', {...pxs({left:slot.value.x, top:slot.value.y,
+                                                width:slot.value.w, height:slot.value.h}),
+                                        fontSize:SS.value_size+'px'}, page);
+    val.dataset.val = other.channel;
   });
 
   // on/off lever
@@ -527,21 +543,23 @@ function renderLamp(lamp) {
 }
 function renderLamps() { LAMPS.forEach(renderLamp); renderStrip(); }
 
-// The strip repeats on every lamp page, so update all copies.
+// The strip repeats on every lamp page, so update every copy.
 function renderStrip() {
   const SS = LC.status_strip;
-  document.querySelectorAll('[data-glow]').forEach(g => {
-    const st = lampState[g.dataset.glow];
-    const lit = st && st.enabled && st.brightness > 0;
-    g.style.opacity = lit ? Math.max(.25, st.brightness/100) : 0;
-    g.style.background = lit
-      ? 'radial-gradient(circle, rgba(255,206,120,.95) 0%, rgba(226,150,48,.55) 55%, rgba(150,80,20,0) 78%)'
-      : 'none';
+  document.querySelectorAll('[data-ind]').forEach(ind => {
+    const st  = lampState[ind.dataset.ind];
+    const lit = !!(st && st.enabled && st.brightness > 0);
+    const box = SS.slots[+ind.dataset.slot][lit ? 'ind_on' : 'ind_off'];
+    Object.assign(ind.style, pxs({left:box.x, top:box.y, width:box.w, height:box.h}));
+    const img = ind.querySelector('img');
+    const src = IMG + (lit ? SS.img_on : SS.img_off) + '.webp';
+    if (img.getAttribute('src') !== src) img.setAttribute('src', src);
   });
   document.querySelectorAll('[data-val]').forEach(v => {
     const st = lampState[v.dataset.val];
-    v.textContent = (st && st.enabled) ? `ON  ${Math.round(st.brightness)}%` : 'OFF';
-    v.style.color = (st && st.enabled) ? '#c1b29e' : '#6a6154';
+    const on = !!(st && st.enabled);
+    v.textContent = on ? `ON  ${Math.round(st.brightness)}%` : 'OFF';
+    v.style.color = on ? '#c1b29e' : '#6a6154';
   });
 }
 

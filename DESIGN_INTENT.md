@@ -206,6 +206,22 @@ Single Python process, responsibilities:
   bootfs and add `systemd.run=/boot/firmware/firstrun.sh systemd.run_success_action=reboot
   systemd.unit=kernel-command-line.target` to `cmdline.txt` (see `tools/pi-firstrun-usb-wifi.sh`).
 
+### iPhone control app (2026-09-13)
+Five swipeable pages at `/control`, built from the Affinity artboard
+(`design/phone/geometry.json` holds every measured position; the template reads it).
+- Page 0: main panel — atmosphere, transport, master volume, now playing, LED test, reboot.
+- Pages 1-4: one per lighting channel, so every light is commanded individually.
+  1 Outside = exterior (CH4), 2 Lamp = upper ceiling (CH1), 3 Stove = stove (CH3),
+  4 Lantern = lower ceiling (CH2).
+- Each lamp page: on/off lever, brightness, flicker speed, flicker depth, fire-sound
+  volume (wired on the stove page only), plus a strip showing the other three lamps
+  with their own lit/dark indicator art and a live `ON n%` reading.
+- Dials read 0 at the 135 deg mark and sweep 270 deg. The master volume interpolates
+  between the five printed reference marks instead (its scale is not linear).
+- Artwork is raster: 15 layers re-encoded as retina WebP, 1.2 MB in total.
+  Live text sits on masks painted over the printed labels. Font is Oswald, bundled.
+- The old page is still served at `/control/classic`.
+
 ### Starting the editor on the Mac
 - Double-click **`Signalbox Editor.app`** in the project folder (or keep it in the Dock).
   It starts the server if needed via `~/signalbox-start.sh` and opens `http://localhost:5001`.

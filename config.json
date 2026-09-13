@@ -10,11 +10,11 @@
           "flicker_speed": 1.5
         },
         "ceiling_upper": {
-          "brightness": 70,
           "enabled": false,
+          "brightness": 50,
           "flicker": true,
-          "flicker_depth": 20,
-          "flicker_speed": 1.5
+          "flicker_speed": 4.8,
+          "flicker_depth": 43
         },
         "exterior": {
           "enabled": false,
@@ -1383,8 +1383,8 @@
     }
   },
   "meta": {
-    "config_id": "edcd62fe",
-    "saved_at": "2026-09-13 22:20:38",
+    "config_id": "a6c46d6c",
+    "saved_at": "2026-09-13 22:31:29",
     "saved_on": "MacBookPro-11AV"
   }
 }
