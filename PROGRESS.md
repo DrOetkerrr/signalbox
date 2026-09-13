@@ -102,6 +102,10 @@ drop the plain-text password from `sync.sh` (key auth is installed now), commit 
   address (NetworkManager ignores gadget devices, so a systemd unit brings `usb0` up).
   Pi back on Wi-Fi (192.168.68.59) and reachable over USB (192.168.2.2). Deployed the
   autoplay change with `sync.sh`; confirmed the Pi resumes Day by itself after restart.
+- Setup identity: `/api/version` fingerprints (config/sounds/code) on both machines,
+  `meta` stamp in config.json on save, `/api/pi/status` + Pi-link LED in the editor header
+  (green in sync / amber differs / red offline), config id shown on the phone badge.
+  Corrected DESIGN_INTENT: Save does not auto-sync; Sync does.
 - Mac: the old launchd agent was crash-looping (missing `~/signalbox-start.sh`, and TCC
   blocks Desktop access anyway). Replaced by `Signalbox Editor.app` (double-click) +
   `tools/make-editor-app.sh`; agent disabled. SSH key installed on the Pi; `ssh signalbox`

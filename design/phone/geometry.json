@@ -1,0 +1,182 @@
+{
+  "_comment": "Measured from signalbox.svg (Affinity export, 2026-09-13 21:04). Units = artboard points, 390x844.",
+  "artboard": {
+    "w": 390,
+    "h": 844
+  },
+  "background": {
+    "img": "panel",
+    "x": -2.54,
+    "y": -2.0,
+    "w": 392.66,
+    "h": 845.85
+  },
+  "controls": {
+    "pi_lamp": {
+      "off": {
+        "img": "lamp-dark",
+        "x": 240.22,
+        "y": 63.0,
+        "w": 37.15,
+        "h": 36.8
+      },
+      "on": {
+        "img": "pi-on",
+        "x": 238.97,
+        "y": 62.46,
+        "w": 40.05,
+        "h": 39.09
+      }
+    },
+    "lever": {
+      "day": {
+        "img": "lever",
+        "x": 63.0,
+        "y": 170.73,
+        "w": 79.0,
+        "h": 64.93,
+        "mirror": false
+      },
+      "night": {
+        "img": "lever",
+        "x": 86.87,
+        "y": 170.57,
+        "w": 79.0,
+        "h": 64.93,
+        "mirror": true
+      }
+    },
+    "play": {
+      "off": {
+        "img": "play-off",
+        "x": 54.28,
+        "y": 299.56,
+        "w": 63.0,
+        "h": 63.0
+      },
+      "on": {
+        "img": "play-on",
+        "x": 55.0,
+        "y": 300.0,
+        "w": 62.0,
+        "h": 62.0
+      }
+    },
+    "pause": {
+      "off": {
+        "img": "pause-off",
+        "x": 162.5,
+        "y": 300.0,
+        "w": 63.0,
+        "h": 63.0
+      },
+      "on": {
+        "img": "pause-on",
+        "x": 162.5,
+        "y": 300.0,
+        "w": 63.0,
+        "h": 63.0
+      }
+    },
+    "stop": {
+      "off": {
+        "img": "stop-off",
+        "x": 272.0,
+        "y": 300.0,
+        "w": 63.0,
+        "h": 63.0
+      },
+      "on": {
+        "img": "stop-on",
+        "x": 272.0,
+        "y": 300.0,
+        "w": 63.0,
+        "h": 63.0
+      }
+    },
+    "led_test": {
+      "off": {
+        "img": "led-off",
+        "x": 36.0,
+        "y": 707.5,
+        "w": 39.64,
+        "h": 48.0
+      },
+      "on": {
+        "img": "led-on",
+        "x": 36.0,
+        "y": 715.46,
+        "w": 38.96,
+        "h": 42.87
+      }
+    },
+    "reboot": {
+      "off": {
+        "img": "lamp-dark",
+        "x": 236.74,
+        "y": 717.16,
+        "w": 34.13,
+        "h": 33.81
+      },
+      "on": {
+        "img": "reboot-on",
+        "x": 236.97,
+        "y": 717.41,
+        "w": 34.06,
+        "h": 33.56
+      }
+    },
+    "knob": {
+      "img": "knob",
+      "cx": 194.0,
+      "cy": 513.5,
+      "size": 88.79,
+      "drawn_percent": 0,
+      "zero_bearing_deg": 166.36,
+      "refs": [
+        [
+          0,
+          0
+        ],
+        [
+          25,
+          42.1
+        ],
+        [
+          50,
+          102.4
+        ],
+        [
+          75,
+          162.0
+        ],
+        [
+          100,
+          204.7
+        ]
+      ],
+      "base_rotation_deg": -103.64,
+      "_note": "artwork is exported unrotated (pointer at 12 o'clock). CSS rotation = base_rotation_deg + interpolate(refs, percent). base puts the pointer on the 0 mark."
+    }
+  },
+  "live": {
+    "window": {
+      "x": 54.0,
+      "y": 611.0,
+      "w": 287.0,
+      "h": 54.0
+    },
+    "next_line": {
+      "x": 59.6,
+      "y": 668.2,
+      "w": 279.9,
+      "h": 19.3,
+      "note": "text is printed into the panel artwork; needs a clean export to drive live"
+    }
+  },
+  "font": {
+    "family": "Oswald",
+    "licence": "SIL OFL 1.1",
+    "bundled": "static/phone/fonts/"
+  }
+}

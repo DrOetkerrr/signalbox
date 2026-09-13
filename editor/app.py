@@ -1,6 +1,10 @@
+import glob
+import hashlib
 import json
 import math
 import os
+import socket
+import urllib.request
 import re
 import random
 import subprocess
@@ -111,6 +115,48 @@ def _save_state(**updates):
 
 AUDIO_EXTS = {'.wav', '.mp3', '.ogg', '.flac', '.aiff', '.m4a'}
 
+# ── Setup identity ────────────────────────────────────────────────────────────
+# Short content fingerprints so Mac and Pi can be compared at a glance:
+#   config_id  — sha256 of config.json minus its "meta" block (same content ⇒ same id)
+#   sounds_id  — sha256 of the sorted (filename, size) list in sounds/
+#   code_id    — sha256 of app.py + templates (fixed at startup; code changes need a restart)
+PI_HOSTS = ["signalbox.local", "192.168.2.2", "169.254.11.2"]
+
+
+def _sha8(data: bytes) -> str:
+    return hashlib.sha256(data).hexdigest()[:8]
+
+
+def config_identity(cfg) -> str:
+    body = {k: v for k, v in cfg.items() if k != "meta"}
+    return _sha8(json.dumps(body, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode())
+
+
+def sounds_identity():
+    items = []
+    try:
+        for f in sorted(os.listdir(SOUNDS_DIR)):
+            if os.path.splitext(f)[1].lower() in AUDIO_EXTS:
+                items.append((f, os.path.getsize(os.path.join(SOUNDS_DIR, f))))
+    except FileNotFoundError:
+        pass
+    return _sha8(json.dumps(items).encode()), len(items)
+
+
+def _code_identity() -> str:
+    h = hashlib.sha256()
+    here = os.path.dirname(os.path.abspath(__file__))
+    for path in [os.path.abspath(__file__)] + sorted(glob.glob(os.path.join(here, "templates", "*.html"))):
+        try:
+            with open(path, "rb") as f:
+                h.update(f.read())
+        except OSError:
+            pass
+    return h.hexdigest()[:8]
+
+
+CODE_ID = _code_identity()
+
 
 def _sound_id_from_filename(filename):
     name = os.path.splitext(filename)[0]
@@ -187,7 +233,7 @@ app = Flask(__name__)
 
 _preview_thread = None
 _stop_preview   = threading.Event()
-_preview_state  = {"elapsed": 0.0, "total": 0.0, "scene_id": None, "playing": False}
+_preview_state  = {"elapsed": 0.0, "total": 0.0, "scene_id": None, "scene_name": None, "playing": False}
 
 _simulate_thread = None
 _stop_simulate   = threading.Event()
@@ -465,6 +511,11 @@ def save_config(cfg):
         backups = sorted(os.listdir(CONFIG_BACKUPS))
         for old in backups[:-20]:
             os.remove(os.path.join(CONFIG_BACKUPS, old))
+    cfg["meta"] = {
+        "config_id": config_identity(cfg),
+        "saved_at":  time.strftime("%Y-%m-%d %H:%M:%S"),
+        "saved_on":  socket.gethostname(),
+    }
     with open(CONFIG_PATH, "w") as f:
         json.dump(cfg, f, indent=2)
 
@@ -646,7 +697,8 @@ def _run_preview(scene, atmosphere, cfg, start_at=0.0):
     _stop_preview.clear()
     events     = sorted(scene.get("events", []), key=lambda e: e.get("start", 0))
     _, total = _build_timeline(scene, cfg)
-    _preview_state.update(elapsed=start_at, total=total, scene_id=scene["id"], playing=True)
+    _preview_state.update(elapsed=start_at, total=total, scene_id=scene["id"],
+                          scene_name=scene.get("name") or scene["id"], playing=True)
     _start_loops(atmosphere, cfg)
 
     sound_to_ch = {}
@@ -972,7 +1024,33 @@ def play_sound(sound_id):
         return jsonify({"error": str(e)}), 500
 
 
+GEOMETRY_PATH = os.path.join(BASE, "design", "phone", "geometry.json")
+_geometry_cache = {"mtime": 0, "data": None}
+
+
+def phone_geometry():
+    """Panel layout measured from the Affinity artboard. Re-read when it changes."""
+    try:
+        m = os.path.getmtime(GEOMETRY_PATH)
+        if m != _geometry_cache["mtime"]:
+            with open(GEOMETRY_PATH) as f:
+                _geometry_cache.update(mtime=m, data=json.load(f))
+    except Exception as e:
+        print(f"[geometry] {e}")
+    return _geometry_cache["data"]
+
+
 @app.route("/control")
+def control_phone():
+    geo = phone_geometry()
+    if not geo:
+        return render_template("control.html", is_pi=_GPIO_AVAILABLE,
+                               peer_url=(MAC_URL if _GPIO_AVAILABLE else PI_URL) + "/control",
+                               peer_label="Mac" if _GPIO_AVAILABLE else "Pi")
+    return render_template("phone/control.html", geometry=geo)
+
+
+@app.route("/control/classic")
 def control():
     peer = MAC_URL + "/control" if _GPIO_AVAILABLE else PI_URL + "/control"
     return render_template("control.html", is_pi=_GPIO_AVAILABLE,
@@ -1047,6 +1125,78 @@ def set_atmosphere():
     _current_atmosphere = atmo
     _save_state(atmosphere=atmo)
     return jsonify({"ok": True, "atmosphere": atmo})
+
+
+def setup_identity():
+    cfg = load_config()
+    sounds_id, n = sounds_identity()
+    return {
+        "role":         "pi" if _GPIO_AVAILABLE else "mac",
+        "host":         socket.gethostname(),
+        "config_id":    config_identity(cfg),
+        "config_meta":  cfg.get("meta", {}),
+        "sounds_id":    sounds_id,
+        "sounds_count": n,
+        "code_id":      CODE_ID,
+    }
+
+
+@app.route("/api/version")
+def get_version():
+    """Fingerprint of the setup on THIS machine (config, sounds, code)."""
+    return jsonify(setup_identity())
+
+
+_pi_last_host = None
+
+
+@app.route("/api/pi/status")
+def pi_status():
+    """Mac only: is the Pi reachable, and does its setup match ours?"""
+    global _pi_last_host
+    if _GPIO_AVAILABLE:
+        return jsonify({"error": "Mac only"}), 403
+    mac = setup_identity()
+    hosts = ([_pi_last_host] if _pi_last_host else []) + [h for h in PI_HOSTS if h != _pi_last_host]
+    pi, host, err = None, None, None
+    for h in hosts:
+        try:
+            with urllib.request.urlopen(f"http://{h}:5001/api/version", timeout=2) as r:
+                pi, host = json.loads(r.read().decode()), h
+                break
+        except urllib.error.HTTPError as e:
+            if e.code == 404:                 # reachable, but running code without /api/version
+                pi, host, err = {"config_id": None, "sounds_id": None, "code_id": None}, h, "old code on Pi"
+                break
+            err = str(e)
+        except Exception as e:
+            err = str(e)
+    _pi_last_host = host
+    if not pi:
+        return jsonify({"reachable": False, "error": err, "mac": mac, "checked_at": time.strftime("%H:%M:%S")})
+    cmp = {k: (pi.get(k) == mac[k]) for k in ("config_id", "sounds_id", "code_id")}
+    return jsonify({
+        "reachable": True, "host": host, "error": err,
+        "pi": pi, "mac": mac,
+        "config_in_sync": cmp["config_id"], "sounds_in_sync": cmp["sounds_id"], "code_in_sync": cmp["code_id"],
+        "in_sync": all(cmp.values()),
+        "checked_at": time.strftime("%H:%M:%S"),
+    })
+
+
+@app.route("/api/phone/status")
+def phone_status():
+    """Everything the control page polls, in one call — the Pi is a single core."""
+    return jsonify({
+        "atmosphere":   _current_atmosphere,
+        "volume":       _master_volume,
+        "stove_volume": _stove_sound_volume,
+        "led_test":     bool(_led_test_state.get("running")),
+        "simulate":     _simulate_state,
+        "preview":      _preview_state,
+        "audio":        _AUDIO_AVAILABLE,
+        "gpio":         _GPIO_AVAILABLE,
+    })
 
 
 @app.route("/api/state")

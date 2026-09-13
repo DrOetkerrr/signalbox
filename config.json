@@ -117,12 +117,12 @@
               "reverb_wet": 0.12,
               "sound": "sf_happy_whistle",
               "start": 8.5,
-              "volume": 0.19
+              "volume": 0.07
             }
           ],
           "id": "scene_1",
-          "max_interval": 120,
-          "min_interval": 0,
+          "max_interval": 240,
+          "min_interval": 120,
           "name": "Morning brew"
         },
         {
@@ -181,12 +181,17 @@
               "sound": "sf_door_open",
               "start": 36.5,
               "volume": 1
+            },
+            {
+              "sound": "sf_bell_signal",
+              "start": 4,
+              "volume": 1
             }
           ],
           "id": "id_6cxf0ze",
-          "max_interval": 60,
-          "min_interval": 0,
-          "name": "Telephpone: incoming call: 2024 not passed yet."
+          "max_interval": 240,
+          "min_interval": 120,
+          "name": "The one who passed"
         },
         {
           "events": [
@@ -240,9 +245,9 @@
             }
           ],
           "id": "id_42inzb6",
-          "max_interval": 60,
-          "min_interval": 0,
-          "name": "Fiona is not fancying him"
+          "max_interval": 240,
+          "min_interval": 120,
+          "name": "Fiona plays hard to get"
         },
         {
           "events": [
@@ -279,9 +284,9 @@
             }
           ],
           "id": "id_2ld3zhb",
-          "max_interval": 60,
-          "min_interval": 0,
-          "name": "Switching"
+          "max_interval": 240,
+          "min_interval": 60,
+          "name": "Switching is my job"
         },
         {
           "events": [
@@ -348,9 +353,9 @@
             }
           ],
           "id": "id_sttbc4n",
-          "max_interval": 60,
-          "min_interval": 0,
-          "name": "Train passing bye"
+          "max_interval": 240,
+          "min_interval": 120,
+          "name": "Train passing by"
         },
         {
           "events": [
@@ -395,7 +400,7 @@
               "pan": 0.77,
               "sound": "sf_man_whistling",
               "start": 15.5,
-              "volume": 1
+              "volume": 0.97
             },
             {
               "reverb_room": 0.4,
@@ -403,12 +408,17 @@
               "sound": "jimmy_hey_there_how_are_ya_2",
               "start": 83.5,
               "volume": 0.49
+            },
+            {
+              "sound": "sf_steam_train_passing",
+              "start": 8.5,
+              "volume": 1
             }
           ],
           "id": "id_g9hnk1z",
-          "max_interval": 60,
-          "min_interval": 0,
-          "name": "Train passing "
+          "max_interval": 240,
+          "min_interval": 60,
+          "name": "Another one chuffing passed"
         },
         {
           "events": [
@@ -487,8 +497,8 @@
             }
           ],
           "id": "id_mb329ee",
-          "max_interval": 60,
-          "min_interval": 0,
+          "max_interval": 240,
+          "min_interval": 120,
           "name": "Sheep and train delays."
         },
         {
@@ -542,8 +552,8 @@
             }
           ],
           "id": "id_zejalqm",
-          "max_interval": 60,
-          "min_interval": 0,
+          "max_interval": 240,
+          "min_interval": 120,
           "name": "Mum's calling"
         },
         {
@@ -603,8 +613,8 @@
             }
           ],
           "id": "id_t670ikw",
-          "max_interval": 120,
-          "min_interval": 0,
+          "max_interval": 240,
+          "min_interval": 120,
           "name": "Fiona still not interested"
         },
         {
@@ -643,8 +653,8 @@
             }
           ],
           "id": "id_7o4jy0y",
-          "max_interval": 60,
-          "min_interval": 0,
+          "max_interval": 240,
+          "min_interval": 120,
           "name": "Complaint to the office"
         },
         {
@@ -689,7 +699,7 @@
           "id": "id_icaq2hc",
           "max_interval": 2400,
           "min_interval": 900,
-          "name": "We are out of coal"
+          "name": "We are out of coal!"
         },
         {
           "events": [
@@ -710,9 +720,9 @@
             }
           ],
           "id": "id_14efxyl",
-          "max_interval": 60,
-          "min_interval": 0,
-          "name": "Tea ceremony"
+          "max_interval": 240,
+          "min_interval": 120,
+          "name": "Time to put the kettle on."
         },
         {
           "events": [
@@ -758,17 +768,22 @@
               "volume": 1
             },
             {
+              "reverb_room": 0.31,
+              "reverb_wet": 0.23,
               "sound": "sf_switch",
               "start": 28.5,
-              "volume": 0.62,
-              "reverb_wet": 0.23,
-              "reverb_room": 0.31
+              "volume": 0.62
+            },
+            {
+              "sound": "jimmy_fiona_says_yes",
+              "start": 6.5,
+              "volume": 1
             }
           ],
           "id": "id_k8kz3rg",
-          "max_interval": 60,
-          "min_interval": 0,
-          "name": "FIona drops by"
+          "max_interval": 240,
+          "min_interval": 120,
+          "name": "Good lord, Fiona drops by"
         }
       ]
     },
@@ -874,7 +889,7 @@
           "id": "id_nt2rx8k",
           "max_interval": 600,
           "min_interval": 180,
-          "name": "Quiet night"
+          "name": "A Quiet night"
         },
         {
           "events": [
@@ -918,7 +933,7 @@
           "id": "id_nt3mw2p",
           "max_interval": 600,
           "min_interval": 240,
-          "name": "Night express"
+          "name": "The Night express"
         },
         {
           "events": [
@@ -1086,6 +1101,12 @@
     },
     "loop_rain": {
       "file": "[loop] rain.wav",
+      "filter": 0,
+      "pan": 0,
+      "volume": 1
+    },
+    "newheli": {
+      "file": "newheli.aiff",
       "filter": 0,
       "pan": 0,
       "volume": 1

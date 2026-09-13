@@ -175,7 +175,21 @@ Single Python process, responsibilities:
 - `/api/state` reports what the box is doing; the control page reads it on load
   so the buttons always mirror reality (boot autoplay, another phone, etc.).
 - `state.json` is not synced by `sync.sh` and is git-ignored — it belongs to the box.
-- Development: edit on Mac, Save button auto-syncs to Pi via `sync.sh`
+- Development: edit on Mac, **Save** writes `config.json` locally; **⇅ Sync** (editor
+  top bar) or `./sync.sh` pushes code + config + sounds to the Pi and restarts its app.
+  Save alone does NOT reach the Pi.
+
+### Setup identity — "is the Pi up to date?" (2026-09-13)
+- Every machine reports `GET /api/version`: `config_id` (sha256 of `config.json`
+  without its `meta` block, 8 hex chars), `sounds_id` (sorted filenames + sizes),
+  `code_id` (app.py + templates, fixed at start), hostname and role.
+- `config.json` carries a `meta` block written on every save: `config_id`, `saved_at`,
+  `saved_on` (hostname). The Pi also saves when lamp settings change from the phone, so
+  the Pi can legitimately be *ahead* of the Mac — the ids show it either way.
+- The Mac editor polls `GET /api/pi/status` (server-side probe of the Pi over Wi-Fi,
+  then the USB addresses) and shows a **Pi link LED**: green = connected and identical,
+  amber = connected but config/sounds/code differ (tooltip says which and where each was
+  saved), red = Pi not reachable. The phone page shows the Pi's own `config_id` in its badge.
 
 ### Reaching the Pi (2026-09-13)
 - **Wi-Fi (normal):** `signalbox.local`, NetworkManager profile `JDM43` in

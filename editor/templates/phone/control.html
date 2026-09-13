@@ -1,0 +1,342 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0b0a09">
+<title>Jimmy's Signal Box</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='phone/fonts/oswald.css') }}">
+<style>
+  :root { --img: {{ url_for('static', filename='phone/img/') }}; }
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html, body {
+    height:100%; background:#0b0a09; overflow:hidden;
+    font-family:'Oswald', 'Helvetica Neue Condensed', sans-serif;
+    -webkit-user-select:none; user-select:none; touch-action:none;
+  }
+  #stage {
+    position:absolute; width:390px; height:844px; transform-origin:0 0;
+    left:0; top:0; will-change:transform;
+  }
+  #panel { position:absolute; left:-2.54px; top:-2px; width:392.66px; height:845.85px; }
+  .ctl { position:absolute; display:block; }
+  .ctl img { width:100%; height:100%; display:block; pointer-events:none; }
+  .ctl.hit, .pad { cursor:pointer; touch-action:none; }
+  .ctl.press { filter:brightness(1.12); }
+
+  /* knob rotates about its own centre */
+  #knob-wrap { position:absolute; touch-action:none; cursor:grab; }
+  #knob { width:100%; height:100%; display:block; will-change:transform; }
+
+  /* live display window */
+  #win {
+    position:absolute; overflow:hidden; color:#e9e2d0;
+    display:flex; flex-direction:column; justify-content:center;
+    padding:4px 11px 5px 13px; gap:2px;
+  }
+  /* heights are tuned to the 54pt window: 26.25 + 2 + 15 + 9 padding = 52.25 */
+  #win-title {
+    flex:0 0 auto;
+    font-weight:500; font-size:21px; line-height:1.25; letter-spacing:.005em;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    text-shadow:0 0 10px rgba(233,226,208,.16);
+  }
+  #win-title.dim { color:#6f6a5e; text-shadow:none; }
+  #win-row { flex:0 0 auto; display:flex; align-items:center; gap:9px; height:15px; }
+  #bar {
+    flex:1; height:10px; border-radius:5px; background:#2a2724;
+    box-shadow:inset 0 1px 2px rgba(0,0,0,.85); overflow:hidden;
+  }
+  #bar-fill {
+    height:100%; width:0%; border-radius:5px; background:#d9d2c0;
+    transition:width .25s linear;
+  }
+  #win-time {
+    font-weight:400; font-size:15px; line-height:1; letter-spacing:.02em;
+    color:#cfc8b6; white-space:nowrap; font-variant-numeric:tabular-nums;
+  }
+  #win.off #bar-fill { background:#4a463f; }
+
+  /* tap targets are generous without moving the artwork */
+  .pad { position:absolute; }
+</style>
+
+<div id="stage">
+  <img id="panel" src="{{ url_for('static', filename='phone/img/panel.webp') }}" alt="">
+
+  <!-- Pi connection lamp (indicator only) -->
+  <div class="ctl" id="pi-lamp"></div>
+
+  <!-- Day / Night lever -->
+  <div class="ctl hit" id="lever"></div>
+  <div class="pad" id="lever-day"   style="left:40px;  top:160px; width:62px; height:86px;"></div>
+  <div class="pad" id="lever-night" style="left:128px; top:160px; width:62px; height:86px;"></div>
+
+  <!-- Transport -->
+  <div class="ctl hit" id="play"></div>
+  <div class="ctl hit" id="pause"></div>
+  <div class="ctl hit" id="stop"></div>
+
+  <!-- Master volume -->
+  <div id="knob-wrap"><img id="knob" src="{{ url_for('static', filename='phone/img/knob.webp') }}" alt=""></div>
+
+  <!-- Now playing -->
+  <div id="win">
+    <div id="win-title" class="dim">—</div>
+    <div id="win-row"><div id="bar"><div id="bar-fill"></div></div><div id="win-time"></div></div>
+  </div>
+
+  <!-- Utilities -->
+  <div class="ctl hit" id="led"></div>
+  <div class="ctl hit" id="reboot"></div>
+</div>
+
+<script>
+const G = {{ geometry | tojson }};
+const IMG = "{{ url_for('static', filename='phone/img/') }}";
+
+/* ── stage scaling: keep the artboard exact, fit it to the screen ───────────── */
+function fit() {
+  const s = Math.min(innerWidth / G.artboard.w, innerHeight / G.artboard.h);
+  const st = document.getElementById('stage');
+  st.style.transform = `translate(${(innerWidth - G.artboard.w*s)/2}px, ${(innerHeight - G.artboard.h*s)/2}px) scale(${s})`;
+  st.dataset.scale = s;
+  st.dataset.ox = (innerWidth - G.artboard.w*s)/2;
+  st.dataset.oy = (innerHeight - G.artboard.h*s)/2;
+}
+addEventListener('resize', fit);
+addEventListener('orientationchange', () => setTimeout(fit, 120));
+if (window.visualViewport) visualViewport.addEventListener('resize', fit);
+addEventListener('load', fit);
+fit(); requestAnimationFrame(fit); setTimeout(fit, 200); setTimeout(fit, 700);
+
+/* ── place a control and give it a state image ─────────────────────────────── */
+function place(el, spec) {
+  el.style.left = spec.x + 'px'; el.style.top = spec.y + 'px';
+  el.style.width = spec.w + 'px'; el.style.height = spec.h + 'px';
+  let img = el.querySelector('img');
+  if (!img) { img = document.createElement('img'); el.appendChild(img); }
+  const src = IMG + spec.img + '.webp';
+  if (img.getAttribute('src') !== src) img.setAttribute('src', src);
+  el.style.transform = spec.mirror ? 'scaleX(-1)' : '';
+}
+const setState = (id, spec) => place(document.getElementById(id), spec);
+
+/* live window + knob geometry */
+const win = document.getElementById('win');
+Object.assign(win.style, {left:G.live.window.x+'px', top:G.live.window.y+'px',
+                          width:G.live.window.w+'px', height:G.live.window.h+'px'});
+const K = G.controls.knob, kw = document.getElementById('knob-wrap');
+Object.assign(kw.style, {left:(K.cx-K.size/2)+'px', top:(K.cy-K.size/2)+'px',
+                         width:K.size+'px', height:K.size+'px'});
+
+/* ── volume: interpolate rotation between the five printed reference marks ─── */
+function pctToDeg(p) {
+  const r = K.refs; p = Math.max(0, Math.min(100, p));
+  for (let i=0; i<r.length-1; i++)
+    if (p <= r[i+1][0]) {
+      const t = (p - r[i][0]) / (r[i+1][0] - r[i][0]);
+      return r[i][1] + t * (r[i+1][1] - r[i][1]);
+    }
+  return r[r.length-1][1];
+}
+function degToPct(d) {
+  const r = K.refs;
+  if (d <= 0) return 0;
+  for (let i=0; i<r.length-1; i++)
+    if (d <= r[i+1][1]) {
+      const t = (d - r[i][1]) / (r[i+1][1] - r[i][1]);
+      return r[i][0] + t * (r[i+1][0] - r[i][0]);
+    }
+  return 100;
+}
+let volume = 50, volPending = null, volDrag = false;
+function drawKnob() {
+  const deg = (K.base_rotation_deg || 0) + pctToDeg(volume);
+  document.getElementById('knob').style.transform = `rotate(${deg}deg)`;
+}
+
+function stagePoint(ev) {
+  const st = document.getElementById('stage'), s = +st.dataset.scale;
+  const t = ev.touches ? ev.touches[0] : ev;
+  return { x: (t.clientX - +st.dataset.ox)/s, y: (t.clientY - +st.dataset.oy)/s };
+}
+function knobFromPoint(p) {
+  let bearing = Math.atan2(p.y - K.cy, p.x - K.cx) * 180/Math.PI;
+  let rel = ((bearing - K.zero_bearing_deg) % 360 + 360) % 360;
+  const span = K.refs[K.refs.length-1][1];
+  if (rel > span) rel = (rel > (span + 360)/2) ? 0 : span;   // outside the sweep: snap to nearest end
+  return degToPct(rel);
+}
+function sendVolume() {
+  clearTimeout(volPending);
+  volPending = setTimeout(() => api('/api/volume', {volume: volume/100}), 90);
+}
+kw.addEventListener('pointerdown', e => {
+  e.preventDefault(); volDrag = true;
+  kw.setPointerCapture && kw.setPointerCapture(e.pointerId);
+  volume = knobFromPoint(stagePoint(e)); drawKnob(); sendVolume();
+});
+kw.addEventListener('pointermove', e => {
+  if (!volDrag) return; e.preventDefault();
+  volume = knobFromPoint(stagePoint(e)); drawKnob(); sendVolume();
+});
+['pointerup','pointercancel'].forEach(t => kw.addEventListener(t, () => { volDrag = false; }));
+
+/* ── api helper ────────────────────────────────────────────────────────────── */
+async function api(path, body) {
+  const opt = body ? {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)}
+                   : {method:'POST'};
+  try {
+    const r = await fetch(path, opt);
+    const d = await r.json().catch(() => ({}));
+    return Object.assign(d, {_ok: r.ok, _status: r.status});
+  } catch (e) {
+    return {_ok: false, _status: 0, error: 'no connection'};
+  }
+}
+const get = p => fetch(p).then(r => r.json());
+
+/* ── UI state ──────────────────────────────────────────────────────────────── */
+let atmo = 'day', playing = false, paused = false, ledTest = false, online = false;
+let rebooting = false;
+// After a tap, trust the UI for a moment so the status poll can't undo it
+// before the server has caught up.
+let holdUntil = 0;
+const hold = (ms = 1600) => { holdUntil = Date.now() + ms; };
+const held = () => Date.now() < holdUntil;
+// A short message shown in the display window (errors, confirmations).
+let flashUntil = 0, flashMsg = '';
+function flash(msg, ms = 2600) { flashMsg = msg; flashUntil = Date.now() + ms; }
+
+function render() {
+  setState('pi-lamp', G.controls.pi_lamp[online ? 'on' : 'off']);
+  setState('lever',   G.controls.lever[atmo === 'night' ? 'night' : 'day']);
+  setState('play',    G.controls.play [playing && !paused ? 'on' : 'off']);
+  setState('pause',   G.controls.pause[paused            ? 'on' : 'off']);
+  setState('stop',    G.controls.stop [!playing && !paused ? 'on' : 'off']);
+  setState('led',     G.controls.led_test[ledTest ? 'on' : 'off']);
+  setState('reboot',  G.controls.reboot[rebooting ? 'on' : 'off']);
+  drawKnob();
+}
+
+function press(el, fn) {
+  let armed = false;
+  // No preventDefault here: cancelling the default on pointerdown suppresses the
+  // compatibility click and hangs mouse interaction. touch-action:none already
+  // stops scrolling and selection on the phone.
+  el.addEventListener('pointerdown', e => {
+    armed = true;
+    el.setPointerCapture && el.setPointerCapture(e.pointerId);
+    el.classList.add('press');
+  });
+  el.addEventListener('pointerup', () => {
+    el.classList.remove('press');
+    if (armed) { armed = false; fn(); }
+  });
+  el.addEventListener('pointercancel', () => { armed = false; el.classList.remove('press'); });
+  el.addEventListener('contextmenu', e => e.preventDefault());
+}
+const byId = id => document.getElementById(id);
+
+press(byId('lever-day'),   () => setAtmo('day'));
+press(byId('lever-night'), () => setAtmo('night'));
+async function setAtmo(a) {
+  if (a === atmo) return;
+  atmo = a; hold(); render();
+  await api('/api/atmosphere', {atmosphere: a});
+  if (playing) await api('/api/simulate/' + a);          // restart the programme in the new atmosphere
+}
+
+press(byId('play'), async () => {
+  hold();
+  if (paused) { await api('/api/transport/unpause'); paused = false; playing = true; }
+  else        { await api('/api/simulate/' + atmo);  playing = true; paused = false; }
+  render();
+});
+press(byId('pause'), async () => {
+  if (!playing || paused) return;
+  hold(); await api('/api/transport/pause'); paused = true; render();
+});
+press(byId('stop'), async () => {
+  hold(); await api('/api/stop_all'); playing = false; paused = false; render(); showIdle();
+});
+press(byId('led'), async () => {
+  const want = !ledTest;
+  ledTest = want; hold(); render();
+  const res = await api(want ? '/api/led/test' : '/api/led/test/stop');
+  if (want && res._ok === false) {
+    ledTest = false; holdUntil = 0; render();
+    flash(res.error || 'LED test unavailable');
+  }
+});
+press(byId('reboot'), async () => {
+  rebooting = true; hold(12000); render();
+  flash('Rebooting…', 12000);
+  const res = await api('/api/reboot');
+  if (res._ok === false) {
+    rebooting = false; holdUntil = 0; render();
+    flash(res.error || 'Reboot unavailable');
+  }
+});
+
+/* ── the display window ────────────────────────────────────────────────────── */
+const fmt = s => { s = Math.max(0, Math.round(s)); return Math.floor(s/60) + ':' + String(s%60).padStart(2,'0'); };
+function showScene(name, elapsed, total) {
+  const t = byId('win-title');
+  t.textContent = name; t.classList.remove('dim');
+  win.classList.remove('off');
+  byId('bar-fill').style.width = (total > 0 ? Math.min(100, elapsed/total*100) : 0) + '%';
+  byId('win-time').textContent = fmt(elapsed) + ' / ' + fmt(total);
+}
+function showWaiting(next, nextIn) {
+  const t = byId('win-title');
+  t.textContent = next ? 'Next: ' + next : 'Waiting';
+  t.classList.remove('dim'); win.classList.add('off');
+  byId('bar-fill').style.width = '0%';
+  byId('win-time').textContent = 'in ' + fmt(nextIn);
+}
+function showIdle(msg) {
+  const t = byId('win-title');
+  t.textContent = msg || (online ? 'Stopped' : 'No connection');
+  t.classList.add('dim'); win.classList.add('off');
+  byId('bar-fill').style.width = '0%'; byId('win-time').textContent = '';
+}
+
+/* ── polling ───────────────────────────────────────────────────────────────── */
+async function boot() {
+  try {
+    const st = await get('/api/state');
+    online = true; atmo = st.atmosphere || 'day'; playing = !!st.playing;
+    if (!volDrag) { volume = Math.round((st.volume ?? .5) * 100); }
+    const lt = await get('/api/led/test/status').catch(() => ({running:false}));
+    ledTest = !!lt.running;
+  } catch { online = false; }
+  render();
+}
+async function tick() {
+  try {
+    const s = await get('/api/phone/status');
+    const sim = s.simulate, pv = s.preview;
+    online = true;
+    if (!volDrag && typeof s.volume === 'number') {
+      const v = Math.round(s.volume * 100);
+      if (v !== volume) { volume = v; drawKnob(); }
+    }
+    if (typeof s.led_test === 'boolean' && !held()) ledTest = s.led_test;
+    if (!held()) {
+      if (sim.running !== playing && !paused) playing = sim.running;
+      if (sim.atmosphere && sim.atmosphere !== atmo) atmo = sim.atmosphere;
+    }
+    if (Date.now() < flashUntil) { showIdle(flashMsg); render(); return; }
+    if (pv.playing && pv.total > 0)      showScene(pv.scene_name || sim.scene_name || 'Playing', pv.elapsed || 0, pv.total);
+    else if (sim.running && sim.mode === 'waiting') showWaiting(sim.scene_name, sim.next_in || 0);
+    else if (paused)                     showIdle('Paused');
+    else                                 showIdle();
+    render();
+  } catch {
+    if (online) { online = false; render(); }
+    showIdle(Date.now() < flashUntil ? flashMsg : null);
+  }
+}
+boot().then(() => { tick(); setInterval(tick, 900); });
+</script>

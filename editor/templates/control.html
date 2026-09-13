@@ -873,9 +873,14 @@ async function pollPiHealth() {
   const badge = document.getElementById('env-badge');
   const isPi  = label.classList.contains('live');
   try {
-    await fetch('/api/health');
+    const v = await fetch('/api/version').then(r => r.json());
     lamp.className = 'env-lamp ' + (isPi ? 'green' : 'blue');
-    badge.title    = isPi ? 'Pi connected — app running' : 'Dev server running';
+    label.textContent = (isPi ? 'Pi' : 'Mac') + ' · ' + (v.config_id || '?');
+    label.className   = 'env-label ' + (isPi ? 'live' : 'dev');
+    const m = v.config_meta || {};
+    badge.title = `${isPi ? 'Pi' : 'Dev server'} · config ${v.config_id}` +
+                  (m.saved_at ? ` (saved ${m.saved_at} on ${m.saved_on})` : '') +
+                  ` · ${v.sounds_count} sounds · code ${v.code_id}`;
   } catch {
     lamp.className    = 'env-lamp red';
     label.textContent = isPi ? 'Pi offline' : 'Dev · offline';

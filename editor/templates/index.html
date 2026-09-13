@@ -36,6 +36,10 @@
   .env-lamp.green { background: #3a9a3a; box-shadow: 0 0 8px 2px rgba(60,180,60,0.7); animation: lamp-pulse 2.5s ease-in-out infinite; }
   .env-lamp.red   { background: #9a2a2a; box-shadow: 0 0 6px 2px rgba(180,50,50,0.6); }
   .env-lamp.blue  { background: #2a5a9a; box-shadow: 0 0 8px 2px rgba(60,120,200,0.6); }
+  .env-lamp.amber { background: #b07a1a; box-shadow: 0 0 8px 2px rgba(220,160,40,0.7); }
+  .env-label.amber { color: #d9a441; }
+  .env-badge.pi-link { cursor: help; }
+  .env-badge.pi-link .env-id { font-size: 11px; letter-spacing: 0.06em; text-transform: none; opacity: 0.75; margin-left: 4px; }
   @keyframes lamp-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.7; } }
   .env-label { font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; }
   .env-label.live { color: #5abf5a; }
@@ -219,6 +223,11 @@
   </div>
   <a class="env-switch" href="{{ peer_url }}">→ {{ peer_label }}</a>
   {% if not is_pi %}
+  <div class="env-badge pi-link" id="pi-link" title="Checking Pi…">
+    <div class="env-lamp red" id="pi-lamp"></div>
+    <span class="env-label off" id="pi-label">Pi · …</span>
+    <span class="env-id" id="pi-id"></span>
+  </div>
   <button class="sync-btn" id="sync-btn" onclick="doSync()" title="Push editor files to Pi and restart Flask">⇅ Sync</button>
   <button class="sync-btn" id="restart-btn" onclick="doRestart()" title="Restart Mac Flask server">↺ Restart</button>
   <button class="sync-btn" id="stop-btn" onclick="doStop()" title="Stop Mac Flask server">⏻ Stop</button>
@@ -388,6 +397,7 @@ async function saveConfig() {
   if (!res.ok) { setStatus('Save failed', false); return; }
   dirty = false;
   setStatus('Saved ✓', true);
+  pollPiLink();
 }
 
 function markDirty() { dirty = true; setStatus('Unsaved changes', false); }
@@ -1284,6 +1294,57 @@ async function pollPiHealth() {
 pollPiHealth();
 setInterval(pollPiHealth, 5000);
 
+// ── Pi link LED: is the Pi reachable, and does its setup match this Mac? ──
+function fmtSaved(meta) {
+  if (!meta || !meta.saved_at) return 'unknown save time';
+  return `saved ${meta.saved_at} on ${meta.saved_on || '?'}`;
+}
+async function pollPiLink() {
+  const el = document.getElementById('pi-link');
+  if (!el) return;                       // Pi build has no link badge
+  const lamp = document.getElementById('pi-lamp');
+  const label = document.getElementById('pi-label');
+  const idEl = document.getElementById('pi-id');
+  try {
+    const d = await fetch('/api/pi/status').then(r => r.json());
+    const mac = d.mac || {};
+    if (!d.reachable) {
+      lamp.className = 'env-lamp red'; label.className = 'env-label off';
+      label.textContent = 'Pi · offline'; idEl.textContent = '';
+      el.title = `Pi not reachable (${d.error || 'no answer'})\nMac config ${mac.config_id} — ${fmtSaved(mac.config_meta)}`;
+      return;
+    }
+    const pi = d.pi || {};
+    const lines = [
+      `Pi reached via ${d.host}`,
+      `config  Mac ${mac.config_id} · Pi ${pi.config_id || '?'}  ${d.config_in_sync ? '✓' : '✗ differs'}`,
+      `        Mac: ${fmtSaved(mac.config_meta)}`,
+      `        Pi:  ${fmtSaved(pi.config_meta)}`,
+      `sounds  Mac ${mac.sounds_count} (${mac.sounds_id}) · Pi ${pi.sounds_count ?? '?'} (${pi.sounds_id || '?'})  ${d.sounds_in_sync ? '✓' : '✗ differs'}`,
+      `code    Mac ${mac.code_id} · Pi ${pi.code_id || '?'}  ${d.code_in_sync ? '✓' : '✗ differs'}`,
+      d.error ? `note: ${d.error}` : '',
+      `checked ${d.checked_at}`,
+    ].filter(Boolean);
+    el.title = lines.join('\n');
+    if (d.in_sync) {
+      lamp.className = 'env-lamp green'; label.className = 'env-label live';
+      label.textContent = 'Pi · in sync'; idEl.textContent = mac.config_id;
+    } else {
+      const what = [!d.config_in_sync && 'config', !d.sounds_in_sync && 'sounds', !d.code_in_sync && 'code'].filter(Boolean).join('+');
+      lamp.className = 'env-lamp amber'; label.className = 'env-label amber';
+      label.textContent = `Pi · ${what} differ${what.includes('+') ? '' : 's'}`;
+      idEl.textContent = `Mac ${mac.config_id} / Pi ${pi.config_id || '?'}`;
+    }
+  } catch (e) {
+    lamp.className = 'env-lamp red'; label.className = 'env-label off';
+    label.textContent = 'Pi · ?'; idEl.textContent = '';
+  }
+}
+(async function piLinkLoop() {      // chained, not setInterval: an offline probe can take ~8 s
+  await pollPiLink();
+  setTimeout(piLinkLoop, 6000);
+})();
+
 async function doSync() {
   const btn = document.getElementById('sync-btn');
   if (!btn) return;
@@ -1296,6 +1357,7 @@ async function doSync() {
     if (d.ok) {
       btn.textContent = '✓ Synced';
       btn.classList.add('ok');
+      setTimeout(pollPiLink, 8000);      // Pi restarts after sync; re-check once it's back
     } else {
       btn.textContent = '✗ Failed';
       btn.classList.add('err');
