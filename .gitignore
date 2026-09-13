@@ -7,3 +7,6 @@ Icon*
 *.pyc
 __pycache__/
 *.swp
+state.json
+state.json.tmp
+Signalbox Editor.app/

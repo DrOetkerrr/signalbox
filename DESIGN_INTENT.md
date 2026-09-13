@@ -152,6 +152,7 @@ Single Python process, responsibilities:
 4. Play stove fire sound (`[SF] fire 3.wav`) on loop while stove LED is on
 5. Play startup chime (`[SF]Pi is up.mp3`) at 30% volume on boot
 6. Switch between Day/Night atmospheres via API
+7. Persist runtime state and resume it on boot (standalone autoplay)
 
 ### Libraries
 - `pygame` — audio playback (44100 Hz, 16-channel mixer, buffer 2048)
@@ -162,7 +163,42 @@ Single Python process, responsibilities:
 ### Boot behaviour
 - `signalbox.service` systemd unit, enabled, `After=network-online.target`
 - Auto-restarts on crash (5s delay)
+- **Standalone autoplay (2026-09-13):** the Pi needs no phone to make sound.
+  Runtime state (`atmosphere`, `playing`, `volume`, `stove_volume`) is persisted
+  to `state.json` next to `config.json` on every control-page action. On boot the
+  app restores it, plays the chime, and ~6 s later resumes the ambient loops and
+  the random scene scheduler for the saved atmosphere. If the last action was
+  Stop, it stays silent until told otherwise. A fresh box with no `state.json`
+  plays the Day atmosphere.
+- Autoplay is on where GPIO is present (the Pi) and off on the Mac dev server;
+  override with `SIGNALBOX_AUTOPLAY=1|0`, delay with `SIGNALBOX_AUTOPLAY_DELAY`.
+- `/api/state` reports what the box is doing; the control page reads it on load
+  so the buttons always mirror reality (boot autoplay, another phone, etc.).
+- `state.json` is not synced by `sync.sh` and is git-ignored — it belongs to the box.
 - Development: edit on Mac, Save button auto-syncs to Pi via `sync.sh`
+
+### Reaching the Pi (2026-09-13)
+- **Wi-Fi (normal):** `signalbox.local`, NetworkManager profile `JDM43` in
+  `/etc/NetworkManager/system-connections/` (powersave off, unlimited retries).
+  The May 2026 profile had vanished, which is why the box went silent/unreachable.
+- **USB-C (maintenance fallback, always available):** the Pi's USB-C port is a USB
+  network gadget (`dtoverlay=dwc2,dr_mode=peripheral` + `modules-load=dwc2,g_ether`
+  on bootfs). NetworkManager ignores gadget interfaces, so `usb0-gadget.service`
+  gives `usb0` fixed addresses: `192.168.2.2` (works with Mac Internet Sharing on)
+  and `169.254.11.2` (direct link). SSH aliases on the Mac: `ssh signalbox`,
+  `ssh signalbox-usb`. Key-based login installed.
+- `sync.sh` tries `signalbox.local`, then the two USB addresses; `PI_HOST=` overrides.
+- One-shot changes to the Pi's root filesystem without a screen: drop a script on
+  bootfs and add `systemd.run=/boot/firmware/firstrun.sh systemd.run_success_action=reboot
+  systemd.unit=kernel-command-line.target` to `cmdline.txt` (see `tools/pi-firstrun-usb-wifi.sh`).
+
+### Starting the editor on the Mac
+- Double-click **`Signalbox Editor.app`** in the project folder (or keep it in the Dock).
+  It starts the server if needed via `~/signalbox-start.sh` and opens `http://localhost:5001`.
+  First run asks for Desktop-folder access once; macOS privacy rules block a plain
+  launchd agent from reading the project, which is why the old `com.signalbox.editor`
+  agent was crash-looping and is now disabled (`.plist.disabled`).
+- Rebuild the app after editing `tools/editor-launcher.applescript` with `tools/make-editor-app.sh`.
 
 ---
 

@@ -57,6 +57,13 @@ except ImportError:
 PI_URL  = "http://signalbox.local:5001"
 MAC_URL = "http://localhost:5001"
 
+# Autoplay on boot: on by default on the Pi (GPIO present), off on the Mac dev
+# server. Override either way with SIGNALBOX_AUTOPLAY=1 / 0.
+_env_autoplay    = os.environ.get("SIGNALBOX_AUTOPLAY")
+_AUTOPLAY        = (_env_autoplay.strip().lower() in ("1", "true", "yes")) if _env_autoplay else _GPIO_AVAILABLE
+AUTOPLAY_DELAY_S = float(os.environ.get("SIGNALBOX_AUTOPLAY_DELAY", "6"))  # let the chime finish first
+_BOOT_TIME       = time.time()
+
 BASE           = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SOUNDS_DIR     = os.path.join(BASE, "sounds")
 CONFIG_PATH    = os.path.join(BASE, "config.json")
@@ -64,6 +71,43 @@ FILTER_CACHE   = os.path.join(BASE, ".filter_cache")
 CONFIG_BACKUPS = os.path.join(BASE, "_config_backups")
 os.makedirs(FILTER_CACHE, exist_ok=True)
 os.makedirs(CONFIG_BACKUPS, exist_ok=True)
+STATE_PATH     = os.path.join(BASE, "state.json")
+
+# ── Runtime state (persisted across reboots) ──────────────────────────────────
+# Written on every user action that changes what the box is doing, read once at
+# boot so a standalone Pi resumes exactly where it was left. Default = playing
+# the day atmosphere, so a fresh box makes sound without any phone involved.
+_STATE_DEFAULTS = {"atmosphere": "day", "playing": True, "volume": 0.5, "stove_volume": 1.0}
+_state_lock = threading.Lock()
+
+
+def _load_state():
+    st = dict(_STATE_DEFAULTS)
+    try:
+        with open(STATE_PATH) as f:
+            data = json.load(f)
+        if isinstance(data, dict):
+            st.update({k: data[k] for k in _STATE_DEFAULTS if k in data})
+    except FileNotFoundError:
+        pass
+    except Exception as e:
+        print(f"[state] unreadable, using defaults — {e}")
+    return st
+
+
+def _save_state(**updates):
+    """Merge updates into state.json atomically. Never raises."""
+    with _state_lock:
+        try:
+            st = _load_state()
+            st.update(updates)
+            tmp = STATE_PATH + ".tmp"
+            with open(tmp, "w") as f:
+                json.dump(st, f, indent=2)
+            os.replace(tmp, STATE_PATH)
+        except Exception as e:
+            print(f"[state] save failed — {e}")
+
 
 AUDIO_EXTS = {'.wav', '.mp3', '.ogg', '.flac', '.aiff', '.m4a'}
 
@@ -832,13 +876,16 @@ def stop_all():
     pygame.mixer.stop()
     _simulate_state.update(running=False, mode="idle", scene_name=None, scene_id=None, next_in=0.0)
     _preview_state.update(elapsed=0.0, playing=False)
+    _save_state(playing=False)
     return jsonify({"ok": True})
 
 
 @app.route("/api/simulate/<atmosphere>", methods=["POST"])
 def start_simulate(atmosphere):
-    global _simulate_thread
+    global _simulate_thread, _current_atmosphere
     cfg = load_config()
+    _current_atmosphere = atmosphere
+    _save_state(atmosphere=atmosphere, playing=True)
     _stop_simulate.set()
     _stop_preview.set()
     if _simulate_thread and _simulate_thread.is_alive():
@@ -856,6 +903,7 @@ def stop_simulate_route():
     pygame.mixer.stop()
     _simulate_state.update(running=False, mode="idle", scene_name=None, scene_id=None, next_in=0.0)
     _preview_state.update(elapsed=0.0, playing=False)
+    _save_state(playing=False)
     return jsonify({"ok": True})
 
 
@@ -871,15 +919,19 @@ def master_volume():
         val = float(request.get_json(silent=True).get("volume", _master_volume))
         _master_volume = max(0.0, min(1.0, val))
         _reapply_master_volume()
+        _save_state(volume=_master_volume)
         return jsonify({"ok": True, "volume": _master_volume})
     return jsonify({"volume": _master_volume})
 
 
 @app.route("/api/transport/play/<atmosphere>", methods=["POST"])
 def transport_play(atmosphere):
+    global _current_atmosphere
     cfg = load_config()
     _stop_loops()
     _start_loops(atmosphere, cfg)
+    _current_atmosphere = atmosphere
+    _save_state(atmosphere=atmosphere, playing=True)
     return jsonify({"ok": True})
 
 
@@ -982,6 +1034,7 @@ def stove_volume():
     if request.method == "POST":
         val = float(request.get_json(silent=True).get("volume", _stove_sound_volume))
         _stove_sound_volume = max(0.0, min(1.0, val))
+        _save_state(stove_volume=_stove_sound_volume)
         return jsonify({"ok": True, "volume": _stove_sound_volume})
     return jsonify({"volume": _stove_sound_volume})
 
@@ -992,7 +1045,23 @@ def set_atmosphere():
     body = request.get_json(silent=True) or {}
     atmo = body.get("atmosphere", "day")
     _current_atmosphere = atmo
+    _save_state(atmosphere=atmo)
     return jsonify({"ok": True, "atmosphere": atmo})
+
+
+@app.route("/api/state")
+def get_state():
+    """What the box is doing right now — used by the control page on load."""
+    return jsonify({
+        "atmosphere":   _current_atmosphere,
+        "playing":      bool(_simulate_state.get("running")),
+        "volume":       _master_volume,
+        "stove_volume": _stove_sound_volume,
+        "autoplay":     _AUTOPLAY,
+        "uptime_s":     round(time.time() - _BOOT_TIME, 1),
+        "audio":        _AUDIO_AVAILABLE,
+        "gpio":         _GPIO_AVAILABLE,
+    })
 
 
 @app.route("/api/shutdown", methods=["POST"])
@@ -1048,6 +1117,16 @@ def api_sync():
 if __name__ == "__main__":
     import atexit
     cfg0 = load_config()
+
+    # Restore persisted state (volume / atmosphere) before any thread starts,
+    # so LED flicker and stove-sound loops see the right atmosphere from t=0.
+    _st0 = _load_state()
+    _master_volume      = max(0.0, min(1.0, float(_st0.get("volume", 0.5))))
+    _stove_sound_volume = max(0.0, min(1.0, float(_st0.get("stove_volume", 1.0))))
+    _current_atmosphere = _st0.get("atmosphere", "day")
+    print(f"[state] atmosphere={_current_atmosphere} playing={_st0.get('playing')} "
+          f"volume={_master_volume:.2f} autoplay={_AUTOPLAY}", flush=True)
+
     _refresh_led_state(cfg0)
     _init_leds()
     if _LED_PWM_OBJS:
@@ -1059,8 +1138,20 @@ if __name__ == "__main__":
     _stove_sound_thread.start()
     atexit.register(_cleanup_leds)
 
-    if _AUDIO_AVAILABLE and not _GPIO_AVAILABLE:
-        _start_loops("day", cfg0)
+    if _AUTOPLAY:
+        # Standalone appliance: resume ambience + scene scheduler after the chime.
+        if _st0.get("playing", True) and _AUDIO_AVAILABLE:
+            def _autoplay():
+                time.sleep(AUTOPLAY_DELAY_S)
+                print(f"[autoplay] resuming '{_current_atmosphere}' atmosphere", flush=True)
+                with app.app_context():
+                    start_simulate(_current_atmosphere)
+            threading.Thread(target=_autoplay, daemon=True).start()
+        else:
+            print("[autoplay] state says stopped — staying silent until told otherwise", flush=True)
+    elif _AUDIO_AVAILABLE:
+        # Mac dev server: loops only, no scene scheduler, as before.
+        _start_loops(_current_atmosphere, cfg0)
 
     def _play_startup_chime():
         time.sleep(2)

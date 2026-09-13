@@ -1,11 +1,12 @@
 [Unit]
-Description=Signalbox ambient controller
-After=network.target
+Description=Signalbox Flask App
+After=network-online.target
+Wants=network-online.target
 
 [Service]
-User=pi
-WorkingDirectory=/home/pi/signalbox/editor
-ExecStart=/usr/bin/python3 app.py
+User=signalbox
+WorkingDirectory=/home/signalbox/signalbox/editor
+ExecStart=/usr/bin/python3 /home/signalbox/signalbox/editor/app.py
 Restart=always
 RestartSec=5
 StandardOutput=journal

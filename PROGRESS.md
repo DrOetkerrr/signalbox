@@ -7,9 +7,10 @@
 
 ## Current Status
 
-**Phase: Editor refinement complete — ready for Pi deployment**
-Last session: 2026-05-02
-Next action: Deploy playback engine to Pi, wire GPIO day/night toggle, PWM lighting.
+**Phase: Installed and working — hardening the standalone experience**
+Last session: 2026-09-13
+Next action: optional polish — spoken IP/status at boot, DHCP reservation on the router,
+drop the plain-text password from `sync.sh` (key auth is installed now), commit + push.
 
 ---
 
@@ -79,6 +80,33 @@ Next action: Deploy playback engine to Pi, wire GPIO day/night toggle, PWM light
 ---
 
 ## Session Log
+
+### 2026-09-13
+- Problem: Pi boots and chimes but stays silent; the iPhone control-page link is dead.
+- Diagnosis: (1) Pi is not on this LAN at all — full /22 scan found nothing on :5001,
+  no mDNS. Wi-Fi not joined or joined elsewhere; no way to tell from the box.
+  (2) By design nothing played until the phone pressed Play/Simulate — autoplay
+  only ran on the Mac dev server.
+- Fix (code, tested on Mac with `SIGNALBOX_AUTOPLAY=1`): runtime state persisted to
+  `state.json`; boot restores it and resumes loops + scene scheduler after the chime;
+  new `GET /api/state`; control page mirrors real server state on load and while polling.
+- Verified: fresh boot → plays Day; Night+Stop → restart stays silent on Night;
+  Simulate → restart resumes Night automatically.
+- Not yet deployed to the Pi (unreachable). Run `./sync.sh` once it is back.
+- Noted: repo `signalbox.service` is stale (user `pi`, `/home/pi`) vs `sync.sh`
+  (`signalbox`, `/home/signalbox`); `sync.sh` has the password in plain text.
+- Mac gotcha: the app preview runner can't read `~/Desktop` (macOS privacy), so the
+  dev server was tested from a scratchpad copy.
+- Later that day, via SD card + USB-C: found the Pi had NO Wi-Fi profile left (root cause).
+  Recreated `JDM43` profile from the PSK on bootfs; enabled USB gadget mode with a fixed
+  address (NetworkManager ignores gadget devices, so a systemd unit brings `usb0` up).
+  Pi back on Wi-Fi (192.168.68.59) and reachable over USB (192.168.2.2). Deployed the
+  autoplay change with `sync.sh`; confirmed the Pi resumes Day by itself after restart.
+- Mac: the old launchd agent was crash-looping (missing `~/signalbox-start.sh`, and TCC
+  blocks Desktop access anyway). Replaced by `Signalbox Editor.app` (double-click) +
+  `tools/make-editor-app.sh`; agent disabled. SSH key installed on the Pi; `ssh signalbox`
+  and `ssh signalbox-usb` aliases; `sync.sh` falls back to USB; repo `signalbox.service`
+  now matches the Pi.
 
 ### 2026-05-02
 - Pi Zero W connected via SSH (192.168.68.55), SSH key installed

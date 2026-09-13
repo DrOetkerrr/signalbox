@@ -514,28 +514,39 @@ function onStoveVolume(pct) {
 }
 
 async function init() {
-  const [cfgRes, volRes, stoveVolRes] = await Promise.all([
+  const [cfgRes, stateRes] = await Promise.all([
     fetch('/api/config'),
-    fetch('/api/volume'),
-    fetch('/api/stove/volume')
+    fetch('/api/state')
   ]);
   cfg = await cfgRes.json();
-  const vol = await volRes.json();
-  applyVolUI(Math.round(vol.volume * 100));
-  const sv = await stoveVolRes.json();
-  const pct = Math.round(sv.volume * 100);
+  const st = await stateRes.json();
+
+  // Mirror what the box is actually doing (it may have autoplayed at boot,
+  // or been driven from another phone) instead of assuming "stopped".
+  applyVolUI(Math.round((st.volume ?? 0.5) * 100));
+  const pct = Math.round((st.stove_volume ?? 1) * 100);
   document.getElementById('stove-vol-slider').value = pct;
   document.getElementById('stove-vol-val').textContent = pct + '%';
+  setAtmoUI(st.atmosphere || 'day');
+  simRunning = !!st.playing;
+  tState     = simRunning ? 'playing' : 'stopped';
+  updateTransportUI();
+  updateSimBtn();
+
   renderLeds();
   renderScenes();
   startSimPoll();
   silenceAllButtons();
 }
 
-function switchAtmo(name) {
+function setAtmoUI(name) {
   atmo = name;
   document.querySelectorAll('.atmo-tab').forEach(b =>
     b.classList.toggle('active', b.id === 'tab-' + name));
+}
+
+function switchAtmo(name) {
+  setAtmoUI(name);
   fetch('/api/atmosphere', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
@@ -652,6 +663,13 @@ function startSimPoll() {
     if (!s.running && simRunning) {
       simRunning = false;
       tState     = 'stopped';
+      updateTransportUI();
+      updateSimBtn();
+    } else if (s.running && !simRunning) {
+      // Started elsewhere (boot autoplay, another phone) — reflect it.
+      simRunning = true;
+      tState     = 'playing';
+      if (s.atmosphere && s.atmosphere !== atmo) { setAtmoUI(s.atmosphere); renderLeds(); renderScenes(); }
       updateTransportUI();
       updateSimBtn();
     }
