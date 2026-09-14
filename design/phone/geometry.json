@@ -95,15 +95,16 @@
       }
     },
     "led_test": {
-      "off": {
-        "img": "led-off",
+      "_comment": "ON is the lever at the top, matching the physical switches.",
+      "on": {
+        "img": "lever-up",
         "x": 36.0,
         "y": 707.5,
         "w": 39.64,
         "h": 48.0
       },
-      "on": {
-        "img": "led-on",
+      "off": {
+        "img": "lever-down",
         "x": 36.0,
         "y": 715.46,
         "w": 38.96,
@@ -167,11 +168,21 @@
       "h": 54.0
     },
     "next_line": {
-      "x": 59.6,
-      "y": 668.2,
-      "w": 279.9,
-      "h": 19.3,
-      "note": "text is printed into the panel artwork; needs a clean export to drive live"
+      "mask": {
+        "x": 132.0,
+        "y": 674.0,
+        "w": 117.0,
+        "h": 17.0,
+        "fill": "#181512"
+      },
+      "text": {
+        "x": 110.0,
+        "y": 674.0,
+        "w": 161.0,
+        "h": 17.0,
+        "size": 12.0
+      },
+      "_comment": "Printed line runs x 138.3..246.5, y 676.9..687.4; the artboard masks it."
     }
   },
   "font": {
@@ -190,15 +201,16 @@
     },
     "lamp_common": {
       "toggle": {
-        "off": {
-          "img": "led-off",
+        "_comment": "ON is the lever at the top, matching the physical switches.",
+        "on": {
+          "img": "lever-up",
           "x": 304.85,
           "y": 336.33,
           "w": 43.64,
           "h": 54.0
         },
-        "on": {
-          "img": "led-on",
+        "off": {
+          "img": "lever-down",
           "x": 304.9,
           "y": 346.0,
           "w": 43.99,

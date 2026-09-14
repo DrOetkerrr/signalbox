@@ -49,6 +49,11 @@
   #knob { width:100%; height:100%; display:block; will-change:transform; }
 
   /* live display window */
+  #next-mask { position:absolute; }
+  #next-line {
+    position:absolute; display:flex; align-items:center; justify-content:center;
+    color:#c1b29e; font-weight:400; letter-spacing:.04em; white-space:nowrap;
+  }
   #win { position:absolute; overflow:hidden; color:#e9e2d0; }
   /* Fixed bands inside the 54pt window: title 2..29, row 34..49. They cannot collide. */
   #win-title {
@@ -106,6 +111,10 @@
     <div id="win-row"><div id="bar"><div id="bar-fill"></div></div><div id="win-time"></div></div>
   </div>
 
+  <!-- Next scene countdown, over the rectangle masked in the artwork -->
+  <div id="next-mask"></div>
+  <div id="next-line"></div>
+
   <!-- Utilities -->
   <div class="ctl hit" id="led"></div>
   <div class="ctl hit" id="reboot"></div>
@@ -146,6 +155,14 @@ const setState = (id, spec) => place(document.getElementById(id), spec);
 const win = document.getElementById('win');
 Object.assign(win.style, {left:G.live.window.x+'px', top:G.live.window.y+'px',
                           width:G.live.window.w+'px', height:G.live.window.h+'px'});
+const NL = G.live.next_line;
+Object.assign(document.getElementById('next-mask').style,
+  {left:NL.mask.x+'px', top:NL.mask.y+'px', width:NL.mask.w+'px', height:NL.mask.h+'px',
+   background:NL.mask.fill});
+Object.assign(document.getElementById('next-line').style,
+  {left:NL.text.x+'px', top:NL.text.y+'px', width:NL.text.w+'px', height:NL.text.h+'px',
+   fontSize:NL.text.size+'px'});
+
 const K = G.controls.knob, kw = document.getElementById('knob-wrap');
 Object.assign(kw.style, {left:(K.cx-K.size/2)+'px', top:(K.cy-K.size/2)+'px',
                          width:K.size+'px', height:K.size+'px'});
@@ -328,6 +345,8 @@ function trackReboot(reachable) {
 
 /* ── the display window ────────────────────────────────────────────────────── */
 const fmt = s => { s = Math.max(0, Math.round(s)); return Math.floor(s/60) + ':' + String(s%60).padStart(2,'0'); };
+function setNextLine(text) { document.getElementById('next-line').textContent = text || ''; }
+
 function showScene(name, elapsed, total) {
   const t = byId('win-title');
   t.textContent = name; t.classList.remove('dim');
@@ -335,12 +354,12 @@ function showScene(name, elapsed, total) {
   byId('bar-fill').style.width = (total > 0 ? Math.min(100, elapsed/total*100) : 0) + '%';
   byId('win-time').textContent = fmt(elapsed) + ' / ' + fmt(total);
 }
-function showWaiting(next, nextIn) {
+function showWaiting(next) {
   const t = byId('win-title');
-  t.textContent = next ? 'Next: ' + next : 'Waiting';
-  t.classList.remove('dim'); win.classList.add('off');
+  t.textContent = next || 'Waiting';
+  t.classList.add('dim'); win.classList.add('off');
   byId('bar-fill').style.width = '0%';
-  byId('win-time').textContent = 'in ' + fmt(nextIn);
+  byId('win-time').textContent = '';
 }
 function showIdle(msg) {
   const t = byId('win-title');
@@ -655,15 +674,21 @@ async function tick() {
       if (sim.running !== playing && !paused) playing = sim.running;
       if (sim.atmosphere && sim.atmosphere !== atmo) atmo = sim.atmosphere;
     }
+    if (sim.running && sim.mode === 'waiting' && sim.next_in > 0) {
+      const sec = Math.round(sim.next_in);
+      setNextLine(sec >= 60 ? `Next scene in ${Math.round(sec/60)} min`
+                            : `Next scene in ${sec} sec`);
+    } else if (sim.running) { setNextLine('Scene playing'); }
+    else { setNextLine(''); }
     if (rebooting) { showIdle('Rebooting…'); render(); return; }
     if (Date.now() < flashUntil) { showIdle(flashMsg); render(); return; }
     if (pv.playing && pv.total > 0)      showScene(pv.scene_name || sim.scene_name || 'Playing', pv.elapsed || 0, pv.total);
-    else if (sim.running && sim.mode === 'waiting') showWaiting(sim.scene_name, sim.next_in || 0);
+    else if (sim.running && sim.mode === 'waiting') showWaiting(sim.scene_name);
     else if (paused)                     showIdle('Paused');
     else                                 showIdle();
     render();
   } catch {
-    trackReboot(false);
+    trackReboot(false); setNextLine('');
     if (online) { online = false; render(); }
     showIdle(rebooting ? 'Rebooting…' : (Date.now() < flashUntil ? flashMsg : null));
   }

@@ -3,25 +3,25 @@
     "day": {
       "leds": {
         "ceiling_lower": {
-          "brightness": 70,
           "enabled": false,
+          "brightness": 70,
           "flicker": false,
-          "flicker_depth": 20,
-          "flicker_speed": 1.5
+          "flicker_speed": 1.5,
+          "flicker_depth": 0
         },
         "ceiling_upper": {
           "enabled": false,
-          "brightness": 50,
+          "brightness": 70,
           "flicker": true,
           "flicker_speed": 4.8,
-          "flicker_depth": 43
+          "flicker_depth": 23
         },
         "exterior": {
           "enabled": false,
-          "brightness": 0,
+          "brightness": 66,
           "flicker": false,
           "flicker_speed": 2,
-          "flicker_depth": 40
+          "flicker_depth": 0
         },
         "interior": {
           "brightness": 0,
@@ -30,11 +30,11 @@
           "flicker_speed": 2
         },
         "stove": {
-          "brightness": 0.77,
-          "enabled": false,
+          "enabled": true,
+          "brightness": 61,
           "flicker": true,
-          "flicker_depth": 40,
-          "flicker_speed": 2.5
+          "flicker_speed": 3.6,
+          "flicker_depth": 67
         }
       },
       "loops": [
@@ -1383,8 +1383,8 @@
     }
   },
   "meta": {
-    "config_id": "a6c46d6c",
-    "saved_at": "2026-09-13 22:31:29",
+    "config_id": "ab3c9f8d",
+    "saved_at": "2026-09-13 22:56:14",
     "saved_on": "MacBookPro-11AV"
   }
 }
