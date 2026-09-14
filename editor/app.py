@@ -1217,7 +1217,7 @@ def control_phone():
         return render_template("control.html", is_pi=_GPIO_AVAILABLE,
                                peer_url=(MAC_URL if _GPIO_AVAILABLE else PI_URL) + "/control",
                                peer_label="Mac" if _GPIO_AVAILABLE else "Pi")
-    return render_template("phone/control.html", geometry=geo)
+    return render_template("phone/control.html", geometry=geo, is_pi=_GPIO_AVAILABLE)
 
 
 @app.route("/control/classic")

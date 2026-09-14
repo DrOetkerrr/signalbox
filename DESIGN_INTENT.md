@@ -264,6 +264,20 @@ Five swipeable pages at `/control`, built from the Affinity artboard
   Live text sits on masks painted over the printed labels. Font is Oswald, bundled.
 - The old page is still served at `/control/classic`.
 
+### Testing the phone UI against the Mac, anywhere
+The Mac runs the same app, so it stands in for the box while away from home.
+
+- Reach it by **Bonjour name, not IP**: `http://<LocalHostName>.local:5001/control`
+  (`scutil --get LocalHostName`). The name survives changing networks; the IP does not.
+- **Away from any known Wi-Fi**: turn on the iPhone's Personal Hotspot and join the
+  Mac to it. Both are then on the phone's own private network and the same `.local`
+  address keeps working. No café Wi-Fi, no client-isolation problems.
+- The Mac copy names itself "Signal Box · Mac" in the title and "Box · Mac" on the
+  home screen, so two identical icons cannot be confused. The panel badge also reads
+  Mac rather than Pi.
+- Lamp pages and reboot answer "not running on Pi" there, by design; everything else
+  (scenes, storylines, volume, selector) behaves exactly as on the box.
+
 ### Starting the editor on the Mac
 - Double-click **`Signalbox Editor.app`** in the project folder (or keep it in the Dock).
   It starts the server if needed via `~/signalbox-start.sh` and opens `http://localhost:5001`.
