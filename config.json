@@ -3,25 +3,25 @@
     "day": {
       "leds": {
         "ceiling_lower": {
-          "enabled": false,
           "brightness": 70,
+          "enabled": false,
           "flicker": false,
-          "flicker_speed": 1.5,
-          "flicker_depth": 0
+          "flicker_depth": 0,
+          "flicker_speed": 1.5
         },
         "ceiling_upper": {
-          "enabled": false,
           "brightness": 70,
+          "enabled": false,
           "flicker": true,
-          "flicker_speed": 4.8,
-          "flicker_depth": 23
+          "flicker_depth": 23,
+          "flicker_speed": 4.8
         },
         "exterior": {
-          "enabled": false,
           "brightness": 66,
+          "enabled": false,
           "flicker": false,
-          "flicker_speed": 2,
-          "flicker_depth": 0
+          "flicker_depth": 0,
+          "flicker_speed": 2
         },
         "interior": {
           "brightness": 0,
@@ -30,11 +30,11 @@
           "flicker_speed": 2
         },
         "stove": {
-          "enabled": true,
           "brightness": 61,
+          "enabled": true,
           "flicker": true,
-          "flicker_speed": 3.6,
-          "flicker_depth": 67
+          "flicker_depth": 67,
+          "flicker_speed": 3.6
         }
       },
       "loops": [
@@ -784,6 +784,29 @@
           "max_interval": 240,
           "min_interval": 120,
           "name": "Good lord, Fiona drops by"
+        },
+        {
+          "events": [
+            {
+              "sound": "sf_walking_on_wooden_floor",
+              "start": 0,
+              "volume": 1
+            },
+            {
+              "sound": "sf_knocking",
+              "start": 10.5,
+              "volume": 1
+            },
+            {
+              "sound": "jimmy_travish_pops_by",
+              "start": 12.5,
+              "volume": 1
+            }
+          ],
+          "id": "id_7udedbs",
+          "max_interval": 240,
+          "min_interval": 120,
+          "name": "Travish pops by"
         }
       ]
     },
@@ -904,7 +927,7 @@
             {
               "pan": -0.5,
               "reverb_wet": 0.25,
-              "sound": "sf_train_whistle_3_2",
+              "sound": "sf_train_whistle_3",
               "start": 2,
               "volume": 0.55
             },
@@ -995,7 +1018,7 @@
             {
               "reverb_room": 0.58,
               "reverb_wet": 0.17,
-              "sound": "sf_train_whistle_3_2",
+              "sound": "sf_train_whistle_3",
               "start": 87.5,
               "volume": 0.15
             }
@@ -1007,6 +1030,11 @@
         }
       ]
     }
+  },
+  "meta": {
+    "config_id": "cc5b5004",
+    "saved_at": "2026-09-14 08:53:13",
+    "saved_on": "MacBookPro-11AV"
   },
   "sounds": {
     "1970_telephone_ring_1_4_seconds_cycle_nl_1": {
@@ -1093,6 +1121,12 @@
       "pan": 0,
       "volume": 1
     },
+    "jimmy_travish_pops_by": {
+      "file": "[Jimmy] Travish pops by.mp3",
+      "filter": 0,
+      "pan": 0,
+      "volume": 1
+    },
     "juimmy_complaint_to_the_office": {
       "file": "[Juimmy] complaint to the office.mp3",
       "filter": 0,
@@ -1106,10 +1140,10 @@
       "volume": 1
     },
     "newheli": {
-      "file": "newheli.aiff",
+      "file": "newheli.wav",
       "filter": 0,
-      "pan": 0,
-      "volume": 1
+      "pan": 0.0,
+      "volume": 1.0
     },
     "radio_feeling_like_a_dream": {
       "file": "[radio] Feeling Like A Dream.mp3",
@@ -1255,6 +1289,12 @@
       "pan": 0,
       "volume": 1
     },
+    "sf_knocking": {
+      "file": "[SF] knocking.wav",
+      "filter": 0,
+      "pan": 0.0,
+      "volume": 1.0
+    },
     "sf_making_tea": {
       "file": "[SF] making-tea.wav",
       "filter": 0,
@@ -1352,12 +1392,6 @@
       "volume": 1
     },
     "sf_train_whistle_3": {
-      "file": "[SF] train whistle 3.m4a",
-      "filter": 0,
-      "pan": 0,
-      "volume": 1
-    },
-    "sf_train_whistle_3_2": {
       "file": "[SF] train whistle 3.wav",
       "filter": 0,
       "pan": 0,
@@ -1381,10 +1415,5 @@
       "pan": 0,
       "volume": 1
     }
-  },
-  "meta": {
-    "config_id": "ab3c9f8d",
-    "saved_at": "2026-09-13 22:56:14",
-    "saved_on": "MacBookPro-11AV"
   }
 }
