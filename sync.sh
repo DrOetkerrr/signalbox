@@ -27,6 +27,16 @@ sshpass -p signalbox rsync -av --checksum \
   -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR" \
   "$(dirname "$LOCAL_DIR")/config.json" "$PI:/home/signalbox/signalbox/config.json"
 
+echo "→ syncing panel geometry"
+# The phone UI reads design/phone/geometry.json at render time. Without it the Pi
+# silently falls back to the old control page, which looks like nothing synced.
+sshpass -p signalbox ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR "$PI" \
+  "mkdir -p /home/signalbox/signalbox/design/phone"
+sshpass -p signalbox rsync -av --checksum \
+  -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR" \
+  "$(dirname "$LOCAL_DIR")/design/phone/geometry.json" \
+  "$PI:/home/signalbox/signalbox/design/phone/geometry.json"
+
 echo "→ syncing sounds"
 sshpass -p signalbox rsync -av --checksum \
   -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR" \
