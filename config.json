@@ -786,6 +786,10 @@
           "name": "Good lord, Fiona drops by"
         },
         {
+          "id": "id_7udedbs",
+          "name": "Travish pops by",
+          "min_interval": 120,
+          "max_interval": 240,
           "events": [
             {
               "sound": "sf_walking_on_wooden_floor",
@@ -798,15 +802,21 @@
               "volume": 1
             },
             {
-              "sound": "jimmy_travish_coms_by",
-              "start": 12.5,
+              "sound": "sf_sheep_sound",
+              "start": 20,
+              "volume": 1
+            },
+            {
+              "sound": "sf_sheep_sound",
+              "start": 23,
+              "volume": 1
+            },
+            {
+              "sound": "jimmy_tells_rashid_about_f",
+              "start": 0,
               "volume": 1
             }
-          ],
-          "id": "id_7udedbs",
-          "max_interval": 240,
-          "min_interval": 120,
-          "name": "Travish pops by"
+          ]
         }
       ]
     },
@@ -925,13 +935,6 @@
               "volume": 0.87
             },
             {
-              "pan": -0.5,
-              "reverb_wet": 0.25,
-              "sound": "sf_train_whistle_3",
-              "start": 2,
-              "volume": 0.55
-            },
-            {
               "sound": "sf_door_open",
               "start": 15,
               "volume": 1
@@ -1014,13 +1017,6 @@
               "sound": "sf_up_stairs",
               "start": 22,
               "volume": 1
-            },
-            {
-              "reverb_room": 0.58,
-              "reverb_wet": 0.17,
-              "sound": "sf_train_whistle_3",
-              "start": 87.5,
-              "volume": 0.15
             }
           ],
           "id": "id_nqk81qv",
@@ -1032,8 +1028,8 @@
     }
   },
   "meta": {
-    "config_id": "10764b8c",
-    "saved_at": "2026-09-14 09:04:43",
+    "config_id": "1cda6b6e",
+    "saved_at": "2026-09-14 09:09:55",
     "saved_on": "MacBookPro-11AV"
   },
   "sounds": {
@@ -1121,12 +1117,6 @@
       "pan": 0,
       "volume": 1
     },
-    "jimmy_travish_coms_by": {
-      "file": "[Jimmy] Travish coms by.mp3",
-      "filter": 0,
-      "pan": 0.0,
-      "volume": 1.0
-    },
     "juimmy_complaint_to_the_office": {
       "file": "[Juimmy] complaint to the office.mp3",
       "filter": 0,
@@ -1140,10 +1130,10 @@
       "volume": 1
     },
     "newheli": {
-      "file": "newheli.wav",
+      "file": "newheli.aiff",
       "filter": 0,
-      "pan": 0.0,
-      "volume": 1.0
+      "pan": 0,
+      "volume": 1
     },
     "radio_feeling_like_a_dream": {
       "file": "[radio] Feeling Like A Dream.mp3",
@@ -1289,12 +1279,6 @@
       "pan": 0,
       "volume": 1
     },
-    "sf_knocking": {
-      "file": "[SF] knocking.wav",
-      "filter": 0,
-      "pan": 0.0,
-      "volume": 1.0
-    },
     "sf_making_tea": {
       "file": "[SF] making-tea.wav",
       "filter": 0,
@@ -1391,12 +1375,6 @@
       "pan": 0,
       "volume": 1
     },
-    "sf_train_whistle_3": {
-      "file": "[SF] train whistle 3.wav",
-      "filter": 0,
-      "pan": 0,
-      "volume": 1
-    },
     "sf_up_stairs": {
       "file": "[SF] up stairs.wav",
       "filter": 0,
@@ -1411,6 +1389,24 @@
     },
     "ui": {
       "file": "UI.wav",
+      "filter": 0,
+      "pan": 0,
+      "volume": 1
+    },
+    "sf_knocking": {
+      "file": "[SF] knocking.aiff",
+      "filter": 0,
+      "pan": 0,
+      "volume": 1
+    },
+    "sf_train_whistle_3": {
+      "file": "[SF] train whistle 3.wav",
+      "filter": 0,
+      "pan": 0,
+      "volume": 1
+    },
+    "jimmy_travish_coms_by": {
+      "file": "[Jimmy] Travish coms by.mp3",
       "filter": 0,
       "pan": 0,
       "volume": 1

@@ -275,6 +275,9 @@ _stop_stove_sound   = threading.Event()
 STOVE_SOUND_CHANNEL = 10
 STOVE_FIRE_SOUNDS   = ["sf_fire_3"]
 _stove_sound_volume = 1.0
+# True while the atmosphere loops are running. The stove crackle follows this,
+# so the fire does not start on its own when the app boots and Stop silences it.
+_playback_active    = False
 
 
 def _refresh_led_state(cfg):
@@ -436,7 +439,8 @@ def _stove_sound_loop():
     ch = pygame.mixer.Channel(STOVE_SOUND_CHANNEL)
     while not _stop_stove_sound.is_set():
         stove = _led_live_state.get(_current_atmosphere, {}).get("stove", {})
-        stove_on = stove.get("enabled", False) and not _led_test_running
+        stove_on = (stove.get("enabled", False) and not _led_test_running
+                    and _playback_active)
         if stove_on and not playing:
             try:
                 cfg = load_config()
@@ -646,6 +650,8 @@ def _apply_params(ch_idx, sound, params):
 # ── Loops ─────────────────────────────────────────────────────────────────────
 
 def _start_loops(atmosphere, cfg):
+    global _playback_active
+    _playback_active = True
     loops = cfg["atmospheres"].get(atmosphere, {}).get("loops", [])
     for i, loop in enumerate(loops[:LOOP_CHANNEL_COUNT]):
         fp = sound_file(cfg, loop["sound"])
@@ -665,6 +671,8 @@ def _start_loops(atmosphere, cfg):
 
 
 def _stop_loops():
+    global _playback_active
+    _playback_active = False
     for i in range(LOOP_CHANNEL_COUNT):
         pygame.mixer.Channel(LOOP_CHANNEL_START + i).stop()
 
@@ -905,11 +913,18 @@ def preview_status():
 
 @app.route("/api/debug/mixer")
 def debug_mixer():
-    channels = []
-    for i in range(10):
-        ch = pygame.mixer.Channel(i)
-        channels.append({"ch": i, "busy": ch.get_busy(), "vol": _channel_volumes.get(i)})
-    return jsonify({"initialized": pygame.mixer.get_init(), "channels": channels, "master_vol": _master_volume})
+    # Report every channel, not the first ten: the stove crackle lives on 10 and
+    # was invisible here, which made it hard to tell what was actually sounding.
+    def role(i):
+        if i < LOOP_CHANNEL_START + LOOP_CHANNEL_COUNT:                     return "loop"
+        if i < SCENE_CHANNEL_START + SCENE_CHANNEL_COUNT:                   return "scene"
+        if i == STOVE_SOUND_CHANNEL:                                        return "stove fire"
+        return "spare"
+    channels = [{"ch": i, "role": role(i), "busy": pygame.mixer.Channel(i).get_busy(),
+                 "vol": _channel_volumes.get(i)}
+                for i in range(pygame.mixer.get_num_channels())]
+    return jsonify({"initialized": pygame.mixer.get_init(), "channels": channels,
+                    "master_vol": _master_volume, "playback_active": _playback_active})
 
 
 @app.route("/api/preview/stop", methods=["POST"])
@@ -923,6 +938,8 @@ def stop_preview():
 
 @app.route("/api/stop_all", methods=["POST"])
 def stop_all():
+    global _playback_active
+    _playback_active = False
     _stop_simulate.set()
     _stop_preview.set()
     pygame.mixer.stop()
@@ -950,6 +967,8 @@ def start_simulate(atmosphere):
 
 @app.route("/api/simulate/stop", methods=["POST"])
 def stop_simulate_route():
+    global _playback_active
+    _playback_active = False
     _stop_simulate.set()
     _stop_preview.set()
     pygame.mixer.stop()
@@ -1300,9 +1319,8 @@ if __name__ == "__main__":
             threading.Thread(target=_autoplay, daemon=True).start()
         else:
             print("[autoplay] state says stopped — staying silent until told otherwise", flush=True)
-    elif _AUDIO_AVAILABLE:
-        # Mac dev server: loops only, no scene scheduler, as before.
-        _start_loops(_current_atmosphere, cfg0)
+    # The Mac editor opens silent. It is an authoring tool, so nothing plays
+    # until Play, Simulate or a scene preview asks for it.
 
     def _play_startup_chime():
         time.sleep(2)
@@ -1316,5 +1334,8 @@ if __name__ == "__main__":
         except Exception as e:
             print(f"[startup chime] {e}")
 
-    threading.Thread(target=_play_startup_chime, daemon=True).start()
+    # "Pi is up" is how the box tells you it has booted. On the Mac there is
+    # nothing to announce, and the editor should open silent.
+    if _GPIO_AVAILABLE:
+        threading.Thread(target=_play_startup_chime, daemon=True).start()
     app.run(host="0.0.0.0", port=5001, debug=False)
