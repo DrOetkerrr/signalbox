@@ -10,18 +10,18 @@
           "flicker_depth": 0
         },
         "ceiling_upper": {
-          "enabled": false,
+          "enabled": true,
           "brightness": 70,
           "flicker": true,
           "flicker_speed": 4.3,
           "flicker_depth": 78
         },
         "exterior": {
+          "enabled": true,
           "brightness": 66,
-          "enabled": false,
           "flicker": false,
-          "flicker_depth": 0,
-          "flicker_speed": 2
+          "flicker_speed": 2,
+          "flicker_depth": 0
         },
         "interior": {
           "brightness": 0,
@@ -34,7 +34,7 @@
           "brightness": 61,
           "flicker": true,
           "flicker_speed": 3.6,
-          "flicker_depth": 67
+          "flicker_depth": 78
         }
       },
       "loops": [
@@ -1051,8 +1051,8 @@
     }
   },
   "meta": {
-    "config_id": "05575827",
-    "saved_at": "2026-09-14 11:07:42",
+    "config_id": "f2ae17de",
+    "saved_at": "2026-09-14 13:21:07",
     "saved_on": "MacBookPro-11AV"
   },
   "sounds": {
