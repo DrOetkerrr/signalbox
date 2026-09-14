@@ -191,6 +191,27 @@ Single Python process, responsibilities:
   amber = connected but config/sounds/code differ (tooltip says which and where each was
   saved), red = Pi not reachable. The phone page shows the Pi's own `config_id` in its badge.
 
+### Storylines (2026-09-14)
+Some scenes belong to a narrative and must play in order, while the rest stay random.
+
+- A scene may carry `story` (a name) and `story_step` (1, 2, 3 …). Scenes without
+  them behave exactly as before.
+- The scheduler shuffles standalone scenes together with **one token per unfinished
+  story**. Drawing a story token plays that story's *next* beat, never a random one.
+  So the order is guaranteed while the story still surfaces at unpredictable moments.
+- Progress lives in `state.json` under `stories`, so a power cut does not restart
+  the romance. `POST /api/stories/<name>/reset` starts an arc again; the editor has
+  a ↺ restart button on each story strip.
+- Per-story settings in `config.json` under `stories` (all optional):
+  `min_gap_scenes` (default 2), `min_gap_seconds` (0), `on_finish` ("rest" or
+  "once"), `rest_seconds` (3600). In practice the natural gap is much larger than
+  the minimum, because a story token appears once per shuffled round.
+- A story may span Day and Night. A beat is only offered when its scene belongs to
+  the current atmosphere, so switching mid-arc pauses the story rather than skipping.
+- `GET /api/stories` lists each arc, its beats, where it has got to, and any
+  numbering problems (duplicate or non-consecutive steps).
+- First arc: **fiona** — 1 plays hard to get, 2 still not interested, 3 drops by.
+
 ### Reaching the Pi (2026-09-13)
 - **Wi-Fi (normal):** `signalbox.local`, NetworkManager profile `JDM43` in
   `/etc/NetworkManager/system-connections/` (powersave off, unlimited retries).

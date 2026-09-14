@@ -81,6 +81,14 @@ drop the plain-text password from `sync.sh` (key auth is installed now), commit 
 
 ## Session Log
 
+### 2026-09-14
+- Storylines added: scenes can carry a story name and step number and are guaranteed
+  to play in order inside the otherwise random scheme. Progress survives reboots.
+  Editor shows the arc, where it has got to, and a restart button. Fiona arc set up.
+- Editor no longer plays anything at startup (ambient loop, stove fire, "Pi is up").
+- Sound library: converted two m4a and one 24-bit aiff that the engine could not play.
+- Fixed: new sounds drew as 2 s stubs; renaming a file silently deleted scene events.
+
 ### 2026-09-13
 - Problem: Pi boots and chimes but stays silent; the iPhone control-page link is dead.
 - Diagnosis: (1) Pi is not on this LAN at all — full /22 scan found nothing on :5001,

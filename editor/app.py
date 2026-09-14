@@ -81,7 +81,8 @@ STATE_PATH     = os.path.join(BASE, "state.json")
 # Written on every user action that changes what the box is doing, read once at
 # boot so a standalone Pi resumes exactly where it was left. Default = playing
 # the day atmosphere, so a fresh box makes sound without any phone involved.
-_STATE_DEFAULTS = {"atmosphere": "day", "playing": True, "volume": 0.5, "stove_volume": 1.0}
+_STATE_DEFAULTS = {"atmosphere": "day", "playing": True, "volume": 0.5, "stove_volume": 1.0,
+                   "stories": {}}
 _state_lock = threading.Lock()
 
 
@@ -238,7 +239,8 @@ _preview_state  = {"elapsed": 0.0, "total": 0.0, "scene_id": None, "scene_name":
 _simulate_thread = None
 _stop_simulate   = threading.Event()
 _simulate_state  = {"running": False, "atmosphere": None, "mode": "idle",
-                    "scene_name": None, "scene_id": None, "next_in": 0.0, "remaining": 0}
+                    "scene_name": None, "scene_id": None, "next_in": 0.0, "remaining": 0,
+                    "story": None, "story_step": None, "story_total": None}
 
 _master_volume   = 0.5
 _channel_volumes = {}
@@ -699,6 +701,103 @@ def _build_timeline(scene, cfg):
     return positions, total
 
 
+# ── Storylines ────────────────────────────────────────────────────────────────
+# A scene may belong to a named story and carry a step number. Ordered beats are
+# guaranteed to play in sequence, while the story as a whole still surfaces at
+# random moments: the scheduler shuffles standalone scenes together with one
+# token per unfinished story, and drawing that token plays the story's next beat.
+
+STORY_DEFAULTS = {
+    "min_gap_scenes":  2,      # other scenes that must pass before the next beat
+    "min_gap_seconds": 0,      # additional wall-clock spacing, 0 = none
+    "on_finish":       "rest", # "rest" = sleep then tell it again, "once" = stop
+    "rest_seconds":    3600,
+}
+
+# session-local pacing, keyed by story name
+_scenes_played   = 0
+_story_last_seen = {}          # story -> (scene counter, wall clock) of its last beat
+
+
+def story_settings(cfg, name):
+    s = dict(STORY_DEFAULTS)
+    s.update((cfg.get("stories") or {}).get(name, {}))
+    return s
+
+
+def story_beats(cfg, name):
+    """Every scene in this story, across all atmospheres, in step order."""
+    beats = []
+    for atmo_name, atmo in cfg.get("atmospheres", {}).items():
+        for scene in atmo.get("scenes", []):
+            if scene.get("story") == name:
+                beats.append((int(scene.get("story_step", 0)), atmo_name, scene))
+    beats.sort(key=lambda b: b[0])
+    return beats
+
+
+def story_names(cfg):
+    names = []
+    for atmo in cfg.get("atmospheres", {}).values():
+        for scene in atmo.get("scenes", []):
+            n = scene.get("story")
+            if n and n not in names:
+                names.append(n)
+    return names
+
+
+def _story_progress():
+    return dict(_load_state().get("stories") or {})
+
+
+def _set_story_progress(name, **fields):
+    all_ = _story_progress()
+    entry = dict(all_.get(name) or {})
+    entry.update(fields)
+    all_[name] = entry
+    _save_state(stories=all_)
+
+
+def next_story_beat(cfg, name, atmosphere, progress=None):
+    """The beat this story owes next, or None if it is finished, resting,
+    still spacing itself out, or waiting for the other atmosphere."""
+    beats = story_beats(cfg, name)
+    if not beats:
+        return None
+    cfgs = story_settings(cfg, name)
+    prog = (progress if progress is not None else _story_progress()).get(name) or {}
+    step = int(prog.get("step", 0))
+
+    if step >= len(beats):                                   # told in full
+        if cfgs["on_finish"] == "once":
+            return None
+        done_at = prog.get("finished_at") or 0
+        if time.time() - done_at < cfgs["rest_seconds"]:
+            return None
+        step = 0                                             # rested: tell it again
+
+    last_count, last_time = _story_last_seen.get(name, (-10**9, 0.0))
+    if _scenes_played - last_count < cfgs["min_gap_scenes"]:
+        return None
+    if cfgs["min_gap_seconds"] and time.time() - last_time < cfgs["min_gap_seconds"]:
+        return None
+
+    _, beat_atmo, scene = beats[step]
+    if beat_atmo != atmosphere:                              # belongs to the other mode
+        return None
+    return {"name": name, "step": step, "total": len(beats), "scene": scene}
+
+
+def advance_story(cfg, name, step):
+    total = len(story_beats(cfg, name))
+    nxt   = step + 1
+    fields = {"step": nxt}
+    if nxt >= total:
+        fields["finished_at"] = time.time()
+    _set_story_progress(name, **fields)
+    _story_last_seen[name] = (_scenes_played, time.time())
+
+
 # ── Preview ───────────────────────────────────────────────────────────────────
 
 def _run_preview(scene, atmosphere, cfg, start_at=0.0):
@@ -780,6 +879,7 @@ def _run_simulate(atmosphere, cfg):
                            scene_name=None, scene_id=None, next_in=0.0, remaining=0)
     _start_loops(atmosphere, cfg)
 
+    global _scenes_played
     queue = []
 
     while not _stop_simulate.is_set():
@@ -788,11 +888,25 @@ def _run_simulate(atmosphere, cfg):
             _stop_simulate.wait(timeout=5)
             continue
 
+        # Standalone scenes shuffle as before. Each unfinished story joins the
+        # shuffle as a single token, so it turns up at an unpredictable moment
+        # but always plays its next beat rather than a random one.
         if not queue:
-            queue = list(scenes)
+            standalone = [sc for sc in scenes if not sc.get("story")]
+            queue = [("scene", sc) for sc in standalone]
+            queue += [("story", n) for n in story_names(cfg)]
             random.shuffle(queue)
 
-        scene  = queue.pop(0)
+        kind, item = queue.pop(0)
+        story = None
+        if kind == "story":
+            story = next_story_beat(cfg, item, atmosphere)
+            if not story:                 # resting, finished, spacing out, or other atmosphere
+                continue
+            scene = story["scene"]
+        else:
+            scene = item
+
         min_s  = scene.get("min_interval", 900)
         max_s  = scene.get("max_interval", 2400)
         wait_s = random.uniform(min_s, max_s)
@@ -800,6 +914,9 @@ def _run_simulate(atmosphere, cfg):
         _simulate_state.update(mode="waiting",
                                scene_name=scene.get("name", scene["id"]),
                                scene_id=scene["id"],
+                               story=story["name"] if story else None,
+                               story_step=(story["step"] + 1) if story else None,
+                               story_total=story["total"] if story else None,
                                next_in=round(wait_s, 1),
                                remaining=len(queue))
         deadline = time.time() + wait_s
@@ -812,6 +929,9 @@ def _run_simulate(atmosphere, cfg):
 
         _simulate_state.update(mode="playing", next_in=0.0)
         _run_preview(scene, atmosphere, cfg, start_at=0.0)
+        _scenes_played += 1
+        if story:
+            advance_story(cfg, story["name"], story["step"])
 
     _simulate_state.update(running=False, mode="idle",
                            scene_name=None, scene_id=None, next_in=0.0)
@@ -1203,6 +1323,44 @@ def pi_status():
     })
 
 
+@app.route("/api/stories")
+def get_stories():
+    """Every storyline, its beats in order, where it has got to, and any problems."""
+    cfg  = load_config()
+    prog = _story_progress()
+    out  = []
+    for name in story_names(cfg):
+        beats  = story_beats(cfg, name)
+        steps  = [b[0] for b in beats]
+        issues = []
+        if len(set(steps)) != len(steps):
+            dupes = sorted({x for x in steps if steps.count(x) > 1})
+            issues.append(f"duplicate step number(s): {', '.join(map(str, dupes))}")
+        if steps and sorted(steps) != list(range(1, len(steps) + 1)):
+            issues.append(f"steps are {steps}, expected 1..{len(steps)}")
+        entry = prog.get(name) or {}
+        at    = int(entry.get("step", 0))
+        out.append({
+            "name": name,
+            "settings": story_settings(cfg, name),
+            "beats": [{"step": st, "atmosphere": a, "scene": sc.get("name", sc["id"]),
+                       "scene_id": sc["id"]} for st, a, sc in beats],
+            "at_step": at,
+            "finished": at >= len(beats),
+            "finished_at": entry.get("finished_at"),
+            "issues": issues,
+        })
+    return jsonify(out)
+
+
+@app.route("/api/stories/<name>/reset", methods=["POST"])
+def reset_story(name):
+    """Put a storyline back to its first beat."""
+    _set_story_progress(name, step=0, finished_at=None)
+    _story_last_seen.pop(name, None)
+    return jsonify({"ok": True, "story": name})
+
+
 @app.route("/api/phone/status")
 def phone_status():
     """Everything the control page polls, in one call — the Pi is a single core."""
@@ -1211,6 +1369,7 @@ def phone_status():
         "volume":       _master_volume,
         "stove_volume": _stove_sound_volume,
         "led_test":     bool(_led_test_state.get("running")),
+        "stories":      _story_progress(),
         "leds":         _led_live_state.get(_current_atmosphere, {}),
         "simulate":     _simulate_state,
         "preview":      _preview_state,

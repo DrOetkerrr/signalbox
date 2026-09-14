@@ -335,10 +335,12 @@ async function init() {
   ]);
   cfg            = await cfgRes.json();
   soundDurations = await durRes.json();
+  await refreshStoryProgress();
   dirty = false;
   renderAll();
   setStatus('Loaded', true);
   _soundSyncInterval = setInterval(syncSoundsFromFolder, 10000);
+  setInterval(async () => { await refreshStoryProgress(); }, 15000);
   const volData = await volRes.json();
   _applyVolUI(Math.round(volData.volume * 100));
 }
@@ -583,6 +585,7 @@ function renderAtmosphere(atmo) {
   if (!data.scenes.length) html += '<div class="empty" style="margin-bottom:12px">No scenes yet.</div>';
   html += `<div class="btn-row"><button class="btn btn-ghost" onclick="addScene('${atmo}')">+ Add scene</button></div>`;
 
+  html += `<datalist id="story-names">${storyNames().map(n => `<option value="${esc(n)}">`).join('')}</datalist>`;
   el.innerHTML = html;
 
   if (_selectedBlock && _selectedBlock.atmo === atmo) renderBlockProps();
@@ -614,7 +617,19 @@ function renderScene(atmo, scene, si) {
         <input type="number" min="1" value="${maxM}"
           onchange="setSceneInterval('${atmo}',${si},'max',this.value)">
       </div>
+      <div>
+        <label title="Scenes sharing a story name play in step order">Story (optional)</label>
+        <input type="text" list="story-names" placeholder="—" value="${esc(scene.story || '')}"
+          onchange="setSceneStory('${atmo}',${si},this.value)">
+      </div>
+      <div>
+        <label title="Position in that story, starting at 1">Step</label>
+        <input type="number" min="1" placeholder="—" value="${scene.story_step || ''}"
+          ${scene.story ? '' : 'disabled'}
+          onchange="setSceneStoryStep('${atmo}',${si},this.value)">
+      </div>
     </div>
+    ${scene.story ? storyStrip(scene.story, scene.id) : ''}
     ${renderScore(atmo, scene, si)}
     <div id="props-${scene.id}" class="score-props"></div>
   </div>`;
@@ -971,6 +986,87 @@ function setSceneName(atmo, i, val)     { cfg.atmospheres[atmo].scenes[i].name =
 function setSceneInterval(atmo, i, w, v) {
   cfg.atmospheres[atmo].scenes[i][w === 'min' ? 'min_interval' : 'max_interval'] = parseInt(v) * 60;
   markDirty();
+}
+
+// ── Storylines ───────────────────────────────────────────────────────────────
+// A scene may join a named story and carry a step number. The scheduler keeps
+// those beats in order while still surfacing the story at random moments.
+function setSceneStory(atmo, i, val) {
+  const scene = cfg.atmospheres[atmo].scenes[i];
+  const name  = (val || '').trim();
+  if (!name) { delete scene.story; delete scene.story_step; }
+  else {
+    scene.story = name;
+    if (!scene.story_step) scene.story_step = nextFreeStep(name);
+  }
+  markDirty(); renderAtmosphere(atmo);
+}
+function setSceneStoryStep(atmo, i, val) {
+  const scene = cfg.atmospheres[atmo].scenes[i];
+  const n = parseInt(val);
+  if (Number.isFinite(n) && n > 0) scene.story_step = n; else delete scene.story_step;
+  markDirty(); renderAtmosphere(atmo);
+}
+function allStoryBeats(name) {
+  const out = [];
+  for (const [atmo, d] of Object.entries(cfg.atmospheres || {}))
+    for (const sc of (d.scenes || []))
+      if (sc.story === name) out.push({atmo, scene: sc, step: sc.story_step || 0});
+  return out.sort((a, b) => a.step - b.step);
+}
+function nextFreeStep(name) {
+  const used = new Set(allStoryBeats(name).map(b => b.step));
+  let n = 1; while (used.has(n)) n++; return n;
+}
+let _storyProgress = {};
+async function refreshStoryProgress() {
+  try {
+    const list = await (await fetch('/api/stories')).json();
+    _storyProgress = Object.fromEntries(list.map(s => [s.name, {step: s.at_step, finished: s.finished}]));
+  } catch (_) {}
+}
+async function resetStory(name) {
+  await fetch(`/api/stories/${encodeURIComponent(name)}/reset`, {method: 'POST'});
+  await refreshStoryProgress();
+  renderAll();
+  setStatus(`Story “${name}” restarted`, true);
+}
+
+function storyNames() {
+  const s = new Set();
+  for (const d of Object.values(cfg.atmospheres || {}))
+    for (const sc of (d.scenes || [])) if (sc.story) s.add(sc.story);
+  return [...s].sort();
+}
+function storyStrip(name, currentSceneId) {
+  const beats = allStoryBeats(name);
+  const steps = beats.map(b => b.step);
+  const dupes = steps.filter((v, i) => steps.indexOf(v) !== i);
+  const gappy = steps.length && steps.join(',') !== beats.map((_, i) => i + 1).join(',');
+  const items = beats.map(b => {
+    const here = b.scene.id === currentSceneId;
+    return `<span style="padding:2px 7px;border-radius:3px;white-space:nowrap;
+      ${here ? 'background:#3a2a08;color:#e8c96a' : 'color:#8a7a5a'}"
+      title="${esc(b.atmo)}">${b.step}. ${esc(b.scene.name || b.scene.id)}</span>`;
+  }).join('<span style="color:#5a4a2a">→</span>');
+  let warn = '';
+  if (dupes.length) warn = `⚠ two scenes share step ${[...new Set(dupes)].join(', ')}`;
+  else if (gappy)   warn = `⚠ steps are ${steps.join(', ')} — expected 1 to ${steps.length}`;
+  const prog = _storyProgress[name] || {};
+  const at   = prog.step || 0;
+  const where = at >= beats.length && beats.length
+    ? 'told in full — resting'
+    : `next up: step ${at + 1}`;
+  return `<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;
+      padding:5px 8px;margin:0 0 8px;background:#150d05;border-left:3px solid #4a3a10;font-size:12px">
+    <span style="color:#6a5a3a;letter-spacing:.08em">STORY “${esc(name)}”</span>
+    ${items}
+    <span style="color:#6a5a3a">· ${where}</span>
+    <button onclick="resetStory('${esc(name)}')" title="Start this story again from step 1"
+      style="background:none;border:1px solid #4a3a10;color:#8a7a5a;border-radius:3px;
+             padding:1px 7px;cursor:pointer;font-family:inherit;font-size:11px">↺ restart</button>
+    ${warn ? `<span style="color:#c07a3a">${warn}</span>` : ''}
+  </div>`;
 }
 
 function soundLabel(id) {
