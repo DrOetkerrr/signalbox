@@ -672,6 +672,13 @@ def _start_loops(atmosphere, cfg):
             print(f"loop error: {e}")
 
 
+def _stop_scene_channels(fade_ms=160):
+    """Silence whatever scene is sounding. Firing a scene by hand overrides the
+    current one rather than layering on top of it."""
+    for i in range(SCENE_CHANNEL_COUNT):
+        pygame.mixer.Channel(SCENE_CHANNEL_START + i).fadeout(fade_ms)
+
+
 def _stop_loops():
     global _playback_active
     _playback_active = False
@@ -1042,6 +1049,7 @@ def preview_scene(atmosphere, scene_id):
     _stop_preview.set()
     if _preview_thread and _preview_thread.is_alive():
         _preview_thread.join(timeout=1)
+    _stop_scene_channels()
     _preview_state.update(playing=True, scene_id=scene_id, elapsed=start_at)
     _preview_thread = threading.Thread(target=_run_preview,
                                        args=(scene, atmosphere, cfg, start_at), daemon=True)
@@ -1344,6 +1352,19 @@ def pi_status():
         "in_sync": all(cmp.values()),
         "checked_at": time.strftime("%H:%M:%S"),
     })
+
+
+@app.route("/api/scenes/<atmosphere>")
+def scenes_for_atmosphere(atmosphere):
+    """The scene list the phone's selector drum shows: name, id and length."""
+    cfg = load_config()
+    out = []
+    for sc in cfg["atmospheres"].get(atmosphere, {}).get("scenes", []):
+        _, total = _build_timeline(sc, cfg)
+        out.append({"id": sc["id"], "name": sc.get("name", sc["id"]),
+                    "length": round(total, 1),
+                    "story": sc.get("story"), "story_step": sc.get("story_step")})
+    return jsonify(out)
 
 
 @app.route("/api/stories")

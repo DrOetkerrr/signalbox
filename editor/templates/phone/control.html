@@ -39,6 +39,28 @@
   .knob-wrap { position:absolute; touch-action:none; cursor:grab; }
   .knob-wrap img { width:100%; height:100%; display:block; will-change:transform; }
   .knob-wrap.inert { opacity:.45; pointer-events:none; }
+
+  /* Scene selector drum: a real cylinder, rows standing off the axis. */
+  #drum-window { position:absolute; overflow:hidden; perspective:340px; }
+  #drum { position:absolute; inset:0; transform-style:preserve-3d; will-change:transform; }
+  .drum-row {
+    position:absolute; left:0; right:0; margin:auto;
+    display:flex; align-items:center; justify-content:center;
+    font-weight:500; letter-spacing:.02em; white-space:nowrap;
+    backface-visibility:hidden; text-align:center;
+    padding:0 8px; overflow:hidden; text-overflow:ellipsis;
+  }
+  #sel-info {
+    position:absolute; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; gap:4px; padding:4px 10px;
+    color:#e9e2d0; overflow:hidden;
+  }
+  #sel-info-name {
+    font-weight:500; font-size:19px; line-height:22px; white-space:nowrap;
+    overflow:hidden; text-overflow:ellipsis; max-width:100%;
+  }
+  #sel-info-sub { font-size:14px; line-height:16px; color:#a2977f; font-variant-numeric:tabular-nums; }
+  .sel-hit { position:absolute; cursor:pointer; }
   .ctl { position:absolute; display:block; }
   .ctl img { width:100%; height:100%; display:block; pointer-events:none; }
   .ctl.hit, .pad { cursor:pointer; touch-action:none; }
@@ -267,6 +289,7 @@ function render() {
   setState('led',     G.controls.led_test[ledTest ? 'on' : 'off']);
   // The reboot lamp blinks steadily while the Pi restarts, and is out otherwise.
   setState('reboot',  G.controls.reboot[(rebooting && blinkOn) ? 'on' : 'off']);
+  renderSelector();
   drawKnob();
   renderLamps();
 }
@@ -294,7 +317,7 @@ press(byId('lever-day'),   () => setAtmo('day'));
 press(byId('lever-night'), () => setAtmo('night'));
 async function setAtmo(a) {
   if (a === atmo) return;
-  atmo = a; hold(); render();
+  atmo = a; hold(); render(); loadScenes();
   await api('/api/atmosphere', {atmosphere: a});
   if (playing) await api('/api/simulate/' + a);          // restart the programme in the new atmosphere
 }
@@ -371,7 +394,7 @@ function showIdle(msg) {
 
 /* ── lamp pages: built from geometry, one per wired channel ────────────────── */
 const P = G.pages, LC = P.lamp_common, LAMPS = P.lamps;
-const PAGE_W = G.artboard.w, PAGE_COUNT = 1 + LAMPS.length;
+const PAGE_W = G.artboard.w, PAGE_COUNT = 1 + LAMPS.length + 1;   // + the scene selector
 const track = document.getElementById('track');
 track.style.width = (PAGE_W * PAGE_COUNT) + 'px';
 
@@ -388,6 +411,8 @@ function el(tag, cls, style, parent) {
   return e;
 }
 const pxs = o => Object.fromEntries(Object.entries(o).map(([k,v]) => [k, v+'px']));
+// geometry files use x/y/w/h; CSS wants left/top/width/height
+const box = o => ({left:o.x+'px', top:o.y+'px', width:o.w+'px', height:o.h+'px'});
 
 function buildLampPage(lamp, index) {
   const page = el('div', 'page', {left: (PAGE_W*index)+'px'}, track);
@@ -603,6 +628,186 @@ function adoptLeds(leds, stoveVol) {
   if (changed) renderLamps();
 }
 
+
+/* ── scene selector: the last page ─────────────────────────────────────────── */
+const SEL = P.selector;
+let selScenes = [], selIndex = 0, selPlayingId = null;
+// A scene fired by hand is not the scheduler running, so the selector's Play
+// lamp follows the sounding scene rather than the programme.
+let scenePlaying = false;
+
+function buildSelectorPage(index) {
+  const page = el('div', 'page', {left: (PAGE_W*index)+'px'}, track);
+  page.id = 'page-' + index;
+
+  const bg = el('img', 'page-bg', pxs({left:SEL.background.x, top:SEL.background.y,
+                                       width:SEL.background.w, height:SEL.background.h}), page);
+  bg.src = IMG + SEL.background.img + '.webp'; bg.alt = '';
+
+  const lamp = el('div', 'ctl', {}, page); lamp.id = 'sel-lamp';
+  const lever = el('div', 'ctl hit', {}, page); lever.id = 'sel-lever';
+  [['day', SEL.lever_pads.day], ['night', SEL.lever_pads.night]].forEach(([which, pad]) => {
+    const p = el('div', 'sel-hit', box(pad), page);
+    press(p, () => setAtmo(which));
+  });
+
+  // the drum
+  const w = el('div', '', box(SEL.drum.window), page);
+  w.id = 'drum-window';
+  const drum = el('div', '', {}, w); drum.id = 'drum';
+
+  // wheels and arrows drive the same drum
+  SEL.wheels.forEach(g => attachWheel(el('div', 'sel-hit', box(g), page)));
+  SEL.arrows.up.forEach(g   => press(el('div', 'sel-hit', box(g), page), () => stepScene(-1)));
+  SEL.arrows.down.forEach(g => press(el('div', 'sel-hit', box(g), page), () => stepScene(+1)));
+
+  const info = el('div', '', box(SEL.info), page); info.id = 'sel-info';
+  el('div', '', {}, info).id = 'sel-info-name';
+  el('div', '', {}, info).id = 'sel-info-sub';
+
+  ['play','pause','stop'].forEach(k => {
+    const c = el('div', 'ctl hit', {}, page); c.id = 'sel-' + k;
+  });
+  press(document.getElementById('sel-play'),  playSelectedScene);
+  press(document.getElementById('sel-pause'), async () => { hold(); await api('/api/transport/pause'); paused = true; render(); });
+  press(document.getElementById('sel-stop'),  async () => {
+    hold(); await api('/api/stop_all');
+    playing = false; paused = false; scenePlaying = false; selPlayingId = null;
+    render(); drawSelInfo();
+  });
+
+  const back = el('div', 'ctl hit', {}, page); back.id = 'sel-back';
+  place(back, SEL.back);
+  press(back, () => goTo(0));
+  return page;
+}
+
+/* drag anywhere on a thumbwheel to spin the drum */
+function attachWheel(wrap) {
+  let dragging = false, startY = 0, startIdx = 0;
+  wrap.addEventListener('pointerdown', e => {
+    e.stopPropagation(); dragging = true; capture(wrap, e);
+    startY = stagePoint(e).y; startIdx = selIndex; drumSnap(false);
+  });
+  wrap.addEventListener('pointermove', e => {
+    if (!dragging) return; e.preventDefault(); e.stopPropagation();
+    const dy = stagePoint(e).y - startY;
+    setSelIndex(startIdx + dy / (SEL.drum.row_height * 0.62), false);
+  });
+  ['pointerup','pointercancel'].forEach(t => wrap.addEventListener(t, () => {
+    if (!dragging) return; dragging = false; setSelIndex(Math.round(selIndex), true);
+  }));
+}
+
+/* and on the drum face itself */
+function attachDrumDrag(w) {
+  let dragging = false, startY = 0, startIdx = 0;
+  w.addEventListener('pointerdown', e => {
+    e.stopPropagation(); dragging = true; capture(w, e);
+    startY = stagePoint(e).y; startIdx = selIndex; drumSnap(false);
+  });
+  w.addEventListener('pointermove', e => {
+    if (!dragging) return; e.preventDefault(); e.stopPropagation();
+    const dy = stagePoint(e).y - startY;
+    setSelIndex(startIdx - dy / (SEL.drum.row_height * 0.9), false);
+  });
+  ['pointerup','pointercancel'].forEach(t => w.addEventListener(t, () => {
+    if (!dragging) return; dragging = false; setSelIndex(Math.round(selIndex), true);
+  }));
+}
+
+const drumSnap = on => {
+  const d = document.getElementById('drum');
+  if (d) d.style.transition = on ? 'transform .32s cubic-bezier(.22,.68,.3,1)' : 'none';
+};
+function stepScene(delta) { drumSnap(true); setSelIndex(Math.round(selIndex) + delta, true); }
+
+function setSelIndex(v, snap) {
+  if (!selScenes.length) return;
+  const max = selScenes.length - 1;
+  selIndex = Math.max(-0.4, Math.min(max + 0.4, v));
+  if (snap) { selIndex = Math.max(0, Math.min(max, Math.round(selIndex))); drumSnap(true); }
+  drawDrum();
+  if (snap) drawSelInfo();
+}
+
+/* Rebuild the rows only when the scene list changes; rotating is just a transform. */
+function buildDrumRows() {
+  const d = document.getElementById('drum');
+  if (!d) return;
+  d.innerHTML = '';
+  const D = SEL.drum;
+  selScenes.forEach((sc, i) => {
+    const row = el('div', 'drum-row', {
+      height: D.row_height + 'px',
+      top: (D.window.h/2 - D.row_height/2) + 'px',
+      fontSize: '16px',
+      transform: `rotateX(${-i * D.step_deg}deg) translateZ(${D.radius}px)`,
+    }, d);
+    row.textContent = sc.name;
+    row.dataset.i = i;
+  });
+  drawDrum();
+}
+
+function drawDrum() {
+  const d = document.getElementById('drum');
+  if (!d) return;
+  const D = SEL.drum;
+  d.style.transform = `rotateX(${selIndex * D.step_deg}deg)`;
+  // the lit band is painted on the artwork, so the centred row inverts to dark ink
+  [...d.children].forEach(row => {
+    const off = Math.abs(+row.dataset.i - selIndex);
+    const centred = off < 0.5;
+    row.style.color   = centred ? '#241c0c' : '#9d9179';
+    row.style.opacity = String(Math.max(0, 1 - off * 0.42));
+    row.style.fontWeight = centred ? '600' : '500';
+  });
+}
+
+const fmtClock = s => { s = Math.max(0, Math.round(s)); return Math.floor(s/60) + ':' + String(s%60).padStart(2,'0'); };
+
+function drawSelInfo(elapsed, total) {
+  const nameEl = document.getElementById('sel-info-name');
+  const subEl  = document.getElementById('sel-info-sub');
+  if (!nameEl) return;
+  const sc = selScenes[Math.round(selIndex)];
+  if (!sc) { nameEl.textContent = 'No scenes'; subEl.textContent = ''; return; }
+  nameEl.textContent = sc.name;
+  const live = selPlayingId === sc.id && total > 0;
+  subEl.textContent = live ? `${fmtClock(elapsed)} / ${fmtClock(total)}`
+                           : (sc.length ? fmtClock(sc.length) : '');
+}
+
+async function loadScenes() {
+  try {
+    const list = await get(`/api/scenes/${atmo}`);
+    const keepId = selScenes[Math.round(selIndex)]?.id;
+    selScenes = list;
+    const at = keepId ? list.findIndex(s => s.id === keepId) : -1;
+    selIndex = at >= 0 ? at : 0;
+    buildDrumRows(); drawSelInfo();
+  } catch (_) {}
+}
+
+async function playSelectedScene() {
+  const sc = selScenes[Math.round(selIndex)];
+  if (!sc) return;
+  hold();
+  selPlayingId = sc.id; scenePlaying = true; paused = false; render();
+  await api(`/api/preview/${atmo}/${sc.id}`);
+}
+
+function renderSelector() {
+  if (!document.getElementById('sel-lamp')) return;
+  place(document.getElementById('sel-lamp'),  SEL.pi_lamp[online ? 'on' : 'off']);
+  place(document.getElementById('sel-lever'), SEL.lever[atmo === 'night' ? 'night' : 'day']);
+  const lit = (scenePlaying || playing) && !paused;
+  place(document.getElementById('sel-play'),  SEL.play [lit ? 'on' : 'off']);
+  place(document.getElementById('sel-pause'), SEL.pause[paused ? 'on' : 'off']);
+  place(document.getElementById('sel-stop'),  SEL.stop [!lit && !paused ? 'on' : 'off']);
+}
+
 /* ── swiping ───────────────────────────────────────────────────────────────── */
 let trackPage = 0, swipeFrom = 0, swiping = false, swipeStartX = 0, swipeStartY = 0, swipeLocked = null;
 function drawTrack(animate) {
@@ -610,8 +815,15 @@ function drawTrack(animate) {
   track.style.transform = `translateX(${-trackPage * PAGE_W}px)`;
 }
 function goTo(i, animate = true) {
-  trackPage = Math.max(0, Math.min(PAGE_COUNT - 1, i));
+  // Swiping on past the selector comes round to the main panel again.
+  if (i >= PAGE_COUNT) { trackPage = PAGE_COUNT - 1; drawTrack(animate); wrapTo(0); return; }
+  if (i < 0)           { trackPage = 0;              drawTrack(animate); return; }
+  trackPage = i;
   drawTrack(animate);
+}
+// Slide to the edge, then jump silently so the wrap does not rewind five pages.
+function wrapTo(target) {
+  setTimeout(() => { trackPage = target; drawTrack(false); }, 300);
 }
 const stageEl = document.getElementById('stage');
 stageEl.addEventListener('pointerdown', e => {
@@ -644,6 +856,8 @@ stageEl.addEventListener('pointermove', e => {
 }));
 
 LAMPS.forEach((l, i) => buildLampPage(l, i + 1));
+buildSelectorPage(PAGE_COUNT - 1);
+attachDrumDrag(document.getElementById('drum-window'));
 drawTrack(false);
 
 /* ── polling ───────────────────────────────────────────────────────────────── */
@@ -656,6 +870,7 @@ async function boot() {
     ledTest = !!lt.running;
     const ps = await get('/api/phone/status').catch(() => null);
     if (ps && ps.leds) adoptLeds(ps.leds, ps.stove_volume);
+    await loadScenes();
   } catch { online = false; }
   render();
 }
@@ -682,10 +897,15 @@ async function tick() {
     else { setNextLine(''); }
     if (rebooting) { showIdle('Rebooting…'); render(); return; }
     if (Date.now() < flashUntil) { showIdle(flashMsg); render(); return; }
-    if (pv.playing && pv.total > 0)      showScene(pv.scene_name || sim.scene_name || 'Playing', pv.elapsed || 0, pv.total);
-    else if (sim.running && sim.mode === 'waiting') showWaiting(sim.scene_name);
+    if (pv.playing && pv.total > 0) {
+      showScene(pv.scene_name || sim.scene_name || 'Playing', pv.elapsed || 0, pv.total);
+      if (pv.scene_id) selPlayingId = pv.scene_id;
+      scenePlaying = true;
+      drawSelInfo(pv.elapsed || 0, pv.total);
+    }
+    else if (sim.running && sim.mode === 'waiting') { showWaiting(sim.scene_name); selPlayingId = null; scenePlaying = false; drawSelInfo(); }
     else if (paused)                     showIdle('Paused');
-    else                                 showIdle();
+    else { showIdle(); if (scenePlaying) { scenePlaying = false; selPlayingId = null; drawSelInfo(); } }
     render();
   } catch {
     trackReboot(false); setNextLine('');

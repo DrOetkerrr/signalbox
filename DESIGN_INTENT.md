@@ -191,6 +191,24 @@ Single Python process, responsibilities:
   amber = connected but config/sounds/code differ (tooltip says which and where each was
   saved), red = Pi not reachable. The phone page shows the Pi's own `config_id` in its badge.
 
+### Scene selector, the last phone page (2026-09-14)
+Page one runs the programme automatically; the last page reaches past the scheduler
+and fires one scene by hand.
+
+- The picker is drawn as a mechanical drum and built as a real cylinder: rows every
+  36.3° on a 56.8pt radius, measured from the separators etched into the artwork, so
+  the names curve away above and below exactly as drawn. The lit band is painted on
+  the panel, so the centred row inverts to dark ink.
+- Spin it by dragging the drum face or either thumbwheel; the arrows step one scene.
+  Release snaps to the nearest row.
+- Scene Information shows the scene name and its length, or elapsed / total while it
+  plays. Everything else about a scene stays in the Mac editor, by design.
+- Play overrides: the sounding scene is faded out and the chosen one starts. The
+  ambience and the scheduler keep running underneath.
+- The drum lists the current atmosphere's scenes and reloads when Day/Night changes.
+- Back returns to page one, and swiping on past the selector comes round to it too.
+- `GET /api/scenes/<atmosphere>` supplies the list.
+
 ### Storylines (2026-09-14)
 Some scenes belong to a narrative and must play in order, while the rest stay random.
 

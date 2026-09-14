@@ -209,12 +209,6 @@
               "volume": 1
             },
             {
-              "reverb_wet": 0.27,
-              "sound": "sf_walking_on_wooden_floor",
-              "start": 38.5,
-              "volume": 1
-            },
-            {
               "reverb_room": 0,
               "reverb_wet": 0,
               "sound": "fiona_does_not_fancy_a_drink",
@@ -234,7 +228,7 @@
             },
             {
               "sound": "sf_door_open",
-              "start": 48.5,
+              "start": 44,
               "volume": 0.78
             },
             {
@@ -242,6 +236,11 @@
               "sound": "sf_switch",
               "start": 38,
               "volume": 0.7
+            },
+            {
+              "sound": "sf_walking_on_wood_floor",
+              "start": 39,
+              "volume": 1
             }
           ],
           "id": "id_42inzb6",
@@ -794,35 +793,53 @@
         {
           "events": [
             {
-              "sound": "sf_walking_on_wooden_floor",
-              "start": 0,
-              "volume": 1
-            },
-            {
               "sound": "sf_knocking",
-              "start": 10.5,
+              "start": 5,
               "volume": 1
             },
             {
               "duration": 4,
               "fade_out": 1,
               "sound": "sf_sheep_sound",
-              "start": 22.5,
+              "start": 32.5,
               "volume": 0.17
             },
             {
-              "duration": 30,
+              "duration": 0,
+              "reverb_room": 0.16,
+              "reverb_wet": 0.25,
               "sound": "jimmy_travish_coms_by",
-              "start": 13.5,
-              "volume": 0.72,
-              "reverb_wet": 0.11,
-              "reverb_room": 0.16
+              "start": 9,
+              "volume": 0.72
+            },
+            {
+              "sound": "radio_whistle_while_you_work",
+              "start": 2,
+              "volume": 0.1
+            },
+            {
+              "sound": "sf_stairs",
+              "start": 0,
+              "volume": 1
+            },
+            {
+              "sound": "sf_door_open_2",
+              "start": 7.5,
+              "volume": 1
+            },
+            {
+              "sound": "sf_sheep_sound",
+              "start": 18.5,
+              "volume": 0.14,
+              "duration": 20
             }
           ],
           "id": "id_7udedbs",
           "max_interval": 240,
           "min_interval": 120,
-          "name": "Travish pops by"
+          "name": "Travish pops by",
+          "story": "fiona",
+          "story_step": 4
         }
       ]
     },
@@ -1034,8 +1051,8 @@
     }
   },
   "meta": {
-    "config_id": "38106b55",
-    "saved_at": "2026-09-14 09:26:32",
+    "config_id": "54002b67",
+    "saved_at": "2026-09-14 09:50:42",
     "saved_on": "MacBookPro-11AV"
   },
   "sounds": {
@@ -1339,6 +1356,12 @@
       "pan": 0,
       "volume": 1
     },
+    "sf_stairs": {
+      "file": "[SF] stairs.wav",
+      "filter": 0,
+      "pan": 0,
+      "volume": 1
+    },
     "sf_station_whistle_long": {
       "file": "[SF] station whistle long.wav",
       "filter": 0,
@@ -1399,8 +1422,32 @@
       "pan": 0,
       "volume": 1
     },
+    "sf_typing_1": {
+      "file": "[SF] typing 1.wav",
+      "filter": 0,
+      "pan": 0,
+      "volume": 1
+    },
+    "sf_typing_2": {
+      "file": "[SF} typing 2.wav",
+      "filter": 0,
+      "pan": 0,
+      "volume": 1
+    },
+    "sf_typing_3": {
+      "file": "[SF] typing 3 .wav",
+      "filter": 0,
+      "pan": 0,
+      "volume": 1
+    },
     "sf_up_stairs": {
       "file": "[SF] up stairs.wav",
+      "filter": 0,
+      "pan": 0,
+      "volume": 1
+    },
+    "sf_walking_on_wood_floor": {
+      "file": "[SF] walking-on-wood-floor.wav",
       "filter": 0,
       "pan": 0,
       "volume": 1
@@ -1413,6 +1460,12 @@
     },
     "ui": {
       "file": "UI.wav",
+      "filter": 0,
+      "pan": 0,
+      "volume": 1
+    },
+    "sf_door_open_2": {
+      "file": "[SF] door open 2.wav",
       "filter": 0,
       "pan": 0,
       "volume": 1
