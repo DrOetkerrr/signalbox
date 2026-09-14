@@ -4,6 +4,9 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#0b0a09">
 <title>Jimmy's Signal Box</title>
+<link rel="apple-touch-icon" href="{{ url_for('static', filename='phone/apple-touch-icon.png') }}">
+<link rel="manifest" href="{{ url_for('static', filename='phone/manifest.webmanifest') }}">
+<meta name="apple-mobile-web-app-title" content="Signal Box">
 <link rel="stylesheet" href="{{ url_for('static', filename='phone/fonts/oswald.css') }}">
 <style>
   :root { --img: {{ url_for('static', filename='phone/img/') }}; }
