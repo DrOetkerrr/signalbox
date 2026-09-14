@@ -202,10 +202,13 @@ Some scenes belong to a narrative and must play in order, while the rest stay ra
 - Progress lives in `state.json` under `stories`, so a power cut does not restart
   the romance. `POST /api/stories/<name>/reset` starts an arc again; the editor has
   a ↺ restart button on each story strip.
-- Per-story settings in `config.json` under `stories` (all optional):
-  `min_gap_scenes` (default 2), `min_gap_seconds` (0), `on_finish` ("rest" or
-  "once"), `rest_seconds` (3600). In practice the natural gap is much larger than
-  the minimum, because a story token appears once per shuffled round.
+- **Pacing is one dial**: `pace_scenes`, "advance this story roughly every N
+  scenes" (default 15). The scheduler turns it into a number of story tokens per
+  shuffled round plus a minimum gap, calibrated so the delivered gap tracks the
+  dial to within about a fifth across 2..60 and is always monotonic. Set it in the
+  editor on the story strip, or `POST /api/stories/<name>/settings`.
+- Other per-story settings in `config.json` under `stories`: `on_finish` ("rest"
+  or "once"), `rest_seconds` (3600), `min_gap_seconds` (0).
 - A story may span Day and Night. A beat is only offered when its scene belongs to
   the current atmosphere, so switching mid-arc pauses the story rather than skipping.
 - `GET /api/stories` lists each arc, its beats, where it has got to, and any

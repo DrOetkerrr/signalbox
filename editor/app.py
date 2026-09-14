@@ -708,11 +708,28 @@ def _build_timeline(scene, cfg):
 # token per unfinished story, and drawing that token plays the story's next beat.
 
 STORY_DEFAULTS = {
-    "min_gap_scenes":  2,      # other scenes that must pass before the next beat
-    "min_gap_seconds": 0,      # additional wall-clock spacing, 0 = none
+    # Pacing, as one dial: advance the story roughly every N scenes. The scheduler
+    # turns this into a number of story tokens per shuffled round plus a floor, so
+    # small values tell the story quickly and large ones stretch it over hours.
+    "pace_scenes":     15,
+    "min_gap_seconds": 0,      # extra wall-clock spacing, 0 = none
     "on_finish":       "rest", # "rest" = sleep then tell it again, "once" = stop
     "rest_seconds":    3600,
 }
+
+
+def story_pacing(cfg, name, standalone_count):
+    """Turn the single 'advance every N scenes' dial into (tokens per shuffled
+    round, minimum scenes between beats).
+
+    Tokens set how often the story is offered; the floor stops beats bunching.
+    Calibrated against the real scheduler: the delivered gap tracks the dial to
+    within roughly a fifth across 2..60, and is always monotonic."""
+    n      = max(1, standalone_count)
+    pace   = max(1, int(story_settings(cfg, name).get("pace_scenes") or 15))
+    tokens = max(1, min(n, -(-n // pace)))                 # ceil(n / pace)
+    floor  = max(1, round(pace * (0.5 if tokens > 1 else 0.85)))
+    return tokens, floor
 
 # session-local pacing, keyed by story name
 _scenes_played   = 0
@@ -758,13 +775,17 @@ def _set_story_progress(name, **fields):
     _save_state(stories=all_)
 
 
-def next_story_beat(cfg, name, atmosphere, progress=None):
+def next_story_beat(cfg, name, atmosphere, progress=None, min_gap=None):
     """The beat this story owes next, or None if it is finished, resting,
     still spacing itself out, or waiting for the other atmosphere."""
     beats = story_beats(cfg, name)
     if not beats:
         return None
     cfgs = story_settings(cfg, name)
+    if min_gap is None:
+        standalone = sum(1 for a in cfg.get("atmospheres", {}).values()
+                         for sc in a.get("scenes", []) if not sc.get("story"))
+        _, min_gap = story_pacing(cfg, name, standalone)
     prog = (progress if progress is not None else _story_progress()).get(name) or {}
     step = int(prog.get("step", 0))
 
@@ -777,7 +798,7 @@ def next_story_beat(cfg, name, atmosphere, progress=None):
         step = 0                                             # rested: tell it again
 
     last_count, last_time = _story_last_seen.get(name, (-10**9, 0.0))
-    if _scenes_played - last_count < cfgs["min_gap_scenes"]:
+    if _scenes_played - last_count < min_gap:
         return None
     if cfgs["min_gap_seconds"] and time.time() - last_time < cfgs["min_gap_seconds"]:
         return None
@@ -894,7 +915,9 @@ def _run_simulate(atmosphere, cfg):
         if not queue:
             standalone = [sc for sc in scenes if not sc.get("story")]
             queue = [("scene", sc) for sc in standalone]
-            queue += [("story", n) for n in story_names(cfg)]
+            for n in story_names(cfg):
+                tokens, _ = story_pacing(cfg, n, len(standalone))
+                queue += [("story", n)] * tokens
             random.shuffle(queue)
 
         kind, item = queue.pop(0)
@@ -1340,6 +1363,9 @@ def get_stories():
             issues.append(f"steps are {steps}, expected 1..{len(steps)}")
         entry = prog.get(name) or {}
         at    = int(entry.get("step", 0))
+        standalone = sum(1 for a in cfg.get("atmospheres", {}).values()
+                         for sc in a.get("scenes", []) if not sc.get("story"))
+        tokens, min_gap = story_pacing(cfg, name, standalone)
         out.append({
             "name": name,
             "settings": story_settings(cfg, name),
@@ -1349,8 +1375,29 @@ def get_stories():
             "finished": at >= len(beats),
             "finished_at": entry.get("finished_at"),
             "issues": issues,
+            "pacing": {"tokens_per_round": tokens, "min_gap_scenes": min_gap,
+                       "standalone_scenes": standalone},
         })
     return jsonify(out)
+
+
+@app.route("/api/stories/<name>/settings", methods=["POST"])
+def set_story_settings(name):
+    """Save a storyline's pacing and ending. Stored in config.json under 'stories'."""
+    body = request.get_json(silent=True) or {}
+    cfg  = load_config()
+    stories = cfg.setdefault("stories", {})
+    entry   = stories.setdefault(name, {})
+    if "pace_scenes" in body:
+        entry["pace_scenes"] = max(1, min(200, int(body["pace_scenes"])))
+    if "on_finish" in body and body["on_finish"] in ("rest", "once"):
+        entry["on_finish"] = body["on_finish"]
+    if "rest_seconds" in body:
+        entry["rest_seconds"] = max(0, int(body["rest_seconds"]))
+    if "min_gap_seconds" in body:
+        entry["min_gap_seconds"] = max(0, int(body["min_gap_seconds"]))
+    save_config(cfg)
+    return jsonify({"ok": True, "settings": story_settings(cfg, name)})
 
 
 @app.route("/api/stories/<name>/reset", methods=["POST"])

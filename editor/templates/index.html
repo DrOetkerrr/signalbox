@@ -1022,9 +1022,31 @@ let _storyProgress = {};
 async function refreshStoryProgress() {
   try {
     const list = await (await fetch('/api/stories')).json();
-    _storyProgress = Object.fromEntries(list.map(s => [s.name, {step: s.at_step, finished: s.finished}]));
+    _storyProgress = Object.fromEntries(list.map(s => [s.name, {
+      step: s.at_step, finished: s.finished,
+      pace: s.settings.pace_scenes, on_finish: s.settings.on_finish,
+      tokens: s.pacing.tokens_per_round, minGap: s.pacing.min_gap_scenes,
+    }]));
   } catch (_) {}
 }
+async function saveStorySettings(name, patch) {
+  await fetch(`/api/stories/${encodeURIComponent(name)}/settings`, {
+    method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(patch)
+  });
+  await refreshStoryProgress();
+  renderAll();
+}
+async function setStoryPace(name, v) {
+  const n = parseInt(v); if (!Number.isFinite(n) || n < 1) return;
+  await saveStorySettings(name, {pace_scenes: n});
+  const p = _storyProgress[name] || {};
+  setStatus(`“${name}” advances every ~${n} scenes`, true);
+}
+async function setStoryFinish(name, v) {
+  await saveStorySettings(name, {on_finish: v});
+  setStatus(`“${name}” will ${v === 'once' ? 'tell once' : 'rest, then retell'}`, true);
+}
+
 async function resetStory(name) {
   await fetch(`/api/stories/${encodeURIComponent(name)}/reset`, {method: 'POST'});
   await refreshStoryProgress();
@@ -1062,6 +1084,18 @@ function storyStrip(name, currentSceneId) {
     <span style="color:#6a5a3a;letter-spacing:.08em">STORY “${esc(name)}”</span>
     ${items}
     <span style="color:#6a5a3a">· ${where}</span>
+    <label style="color:#6a5a3a" title="How often this story advances. Low numbers tell it quickly, high numbers stretch it over hours.">advance every
+      <input type="number" min="1" max="200" value="${prog.pace ?? 15}"
+        onchange="setStoryPace('${esc(name)}', this.value)"
+        style="width:52px;background:#0f0a04;border:1px solid #4a3a10;color:#c8a24a;
+               border-radius:3px;padding:1px 4px;font-family:inherit;font-size:11px"> scenes</label>
+    <label style="color:#6a5a3a" title="What happens after the last beat">at the end
+      <select onchange="setStoryFinish('${esc(name)}', this.value)"
+        style="background:#0f0a04;border:1px solid #4a3a10;color:#c8a24a;border-radius:3px;
+               padding:1px 4px;font-family:inherit;font-size:11px">
+        <option value="rest" ${(prog.on_finish ?? 'rest') === 'rest' ? 'selected' : ''}>rest, then retell</option>
+        <option value="once" ${prog.on_finish === 'once' ? 'selected' : ''}>tell once</option>
+      </select></label>
     <button onclick="resetStory('${esc(name)}')" title="Start this story again from step 1"
       style="background:none;border:1px solid #4a3a10;color:#8a7a5a;border-radius:3px;
              padding:1px 7px;cursor:pointer;font-family:inherit;font-size:11px">↺ restart</button>

@@ -807,14 +807,16 @@
               "duration": 4,
               "fade_out": 1,
               "sound": "sf_sheep_sound",
-              "start": 23,
+              "start": 22.5,
               "volume": 0.17
             },
             {
               "duration": 30,
               "sound": "jimmy_travish_coms_by",
-              "start": 0,
-              "volume": 1
+              "start": 13.5,
+              "volume": 0.72,
+              "reverb_wet": 0.11,
+              "reverb_room": 0.16
             }
           ],
           "id": "id_7udedbs",
@@ -1032,8 +1034,8 @@
     }
   },
   "meta": {
-    "config_id": "f85a0667",
-    "saved_at": "2026-09-14 09:18:52",
+    "config_id": "38106b55",
+    "saved_at": "2026-09-14 09:26:32",
     "saved_on": "MacBookPro-11AV"
   },
   "sounds": {
