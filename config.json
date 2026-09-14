@@ -798,7 +798,7 @@
               "volume": 1
             },
             {
-              "sound": "jimmy_travish_pops_by",
+              "sound": "jimmy_travish_coms_by",
               "start": 12.5,
               "volume": 1
             }
@@ -1032,8 +1032,8 @@
     }
   },
   "meta": {
-    "config_id": "cc5b5004",
-    "saved_at": "2026-09-14 08:53:13",
+    "config_id": "10764b8c",
+    "saved_at": "2026-09-14 09:04:43",
     "saved_on": "MacBookPro-11AV"
   },
   "sounds": {
@@ -1121,11 +1121,11 @@
       "pan": 0,
       "volume": 1
     },
-    "jimmy_travish_pops_by": {
-      "file": "[Jimmy] Travish pops by.mp3",
+    "jimmy_travish_coms_by": {
+      "file": "[Jimmy] Travish coms by.mp3",
       "filter": 0,
-      "pan": 0,
-      "volume": 1
+      "pan": 0.0,
+      "volume": 1.0
     },
     "juimmy_complaint_to_the_office": {
       "file": "[Juimmy] complaint to the office.mp3",

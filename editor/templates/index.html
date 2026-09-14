@@ -303,6 +303,7 @@
 let cfg            = null;
 let dirty          = false;
 let soundDurations = {};
+const FALLBACK_DUR = 2;   // only used until the real length arrives
 let _selectedBlock = null;
 let _previewSceneId = null;
 let _loopAtmo       = null;
@@ -362,6 +363,11 @@ async function syncSoundsFromFolder() {
     const newKeys = Object.keys(sounds).sort().join(',');
     if (oldKeys === newKeys) return;
 
+    // The sound set changed, so the duration map is stale. Without this every
+    // newly added clip falls back to 2 s and draws as a stub block.
+    try { soundDurations = await (await fetch('/api/sound_durations')).json(); }
+    catch (_) {}
+
     // Merge: keep in-memory edits to existing entries, add new, drop stale
     for (const [id, val] of Object.entries(sounds)) {
       if (!(id in cfg.sounds)) cfg.sounds[id] = val;
@@ -370,21 +376,27 @@ async function syncSoundsFromFolder() {
       if (!(id in sounds)) delete cfg.sounds[id];
     }
 
-    // Clean orphaned event references from in-memory scene data
+    // Events whose sound file has gone are KEPT, not deleted. Renaming a file in
+    // the sounds folder used to silently wipe every event that used it, and the
+    // next save made that permanent. The score already draws them dashed and
+    // red, so leave them visible and let the user repoint them.
     const valid = new Set(Object.keys(cfg.sounds));
+    const orphans = [];
     for (const atmo of Object.values(cfg.atmospheres)) {
       for (const scene of (atmo.scenes || [])) {
-        const before = scene.events.length;
-        scene.events = scene.events.filter(e => valid.has(e.sound));
-        if (scene.events.length < before)
-          console.warn(`Removed ${before - scene.events.length} orphaned event(s) from "${scene.name}"`);
+        for (const e of scene.events)
+          if (!valid.has(e.sound)) orphans.push(`${scene.name}: ${e.sound}`);
       }
-      atmo.loops = (atmo.loops || []).filter(l => valid.has(l.sound));
+      for (const l of (atmo.loops || []))
+        if (!valid.has(l.sound)) orphans.push(`loop: ${l.sound}`);
     }
 
-    markDirty();
     renderSoundsNav();
     renderAll();
+    if (orphans.length) {
+      setStatus(`${orphans.length} event(s) point at a missing sound`, false);
+      console.warn('Missing sounds still referenced:', orphans);
+    }
   } catch (_) {}
 }
 
@@ -620,7 +632,7 @@ function renderScore(atmo, scene, si) {
 
   let maxEnd = 20;
   for (const ev of events) {
-    const dur = soundDurations[ev.sound] || 2;
+    const dur = soundDurations[ev.sound] ?? FALLBACK_DUR;
     maxEnd = Math.max(maxEnd, (ev.start || 0) + dur);
   }
   const trackW = Math.round((maxEnd + 6) * PX_PER_SEC);
@@ -654,7 +666,7 @@ function renderScore(atmo, scene, si) {
                            .filter(ev => ev.sound === soundId);
       let bHtml = '';
       for (const ev of blocks) {
-        const fullDur = soundDurations[soundId] || 2;
+        const fullDur = soundDurations[soundId] ?? FALLBACK_DUR;
         const dur  = (ev.duration && ev.duration > 0) ? Math.min(ev.duration, fullDur) : fullDur;
         const left = (ev.start || 0) * PX_PER_SEC;
         const bW   = Math.max(6, dur * PX_PER_SEC);
@@ -765,7 +777,7 @@ function addSoundToScore(atmo, si, sceneId) {
   let start = 0;
   for (const ev of events) {
     if (ev.sound === sound) {
-      start = Math.max(start, (ev.start || 0) + (soundDurations[sound] || 2) + 0.5);
+      start = Math.max(start, (ev.start || 0) + (soundDurations[sound] ?? FALLBACK_DUR) + 0.5);
     }
   }
   events.push({ sound, start: Math.round(start * 2) / 2, volume: 1.0 });
