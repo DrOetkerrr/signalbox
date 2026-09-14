@@ -685,19 +685,35 @@ function renderScore(atmo, scene, si) {
         const dur  = (ev.duration && ev.duration > 0) ? Math.min(ev.duration, fullDur) : fullDur;
         const left = (ev.start || 0) * PX_PER_SEC;
         const bW   = Math.max(6, dur * PX_PER_SEC);
+        // A block can be shorter than its file because the event trims it. Say so,
+        // otherwise a long recording silently looks like a short one.
+        const trimmedEnd   = dur < fullDur - 0.05;
+        const trimmedStart = (ev.offset || 0) > 0.05;
         const isSel = _selectedBlock && _selectedBlock.atmo === atmo &&
                       _selectedBlock.si === si && _selectedBlock.evIdx === ev._idx;
-        const blockTitle = missing
-          ? `⚠ ${soundId} — file missing`
-          : `${soundId} @ ${(ev.start||0).toFixed(1)}s`;
+        let blockTitle;
+        if (missing) {
+          blockTitle = `⚠ ${soundId} — file missing`;
+        } else {
+          blockTitle = `${soundId} @ ${(ev.start||0).toFixed(1)}s`;
+          if (trimmedEnd || trimmedStart) {
+            blockTitle += `\nplaying ${dur.toFixed(1)}s of ${fullDur.toFixed(1)}s`;
+            if (trimmedStart) blockTitle += `, from ${(ev.offset).toFixed(1)}s in`;
+            blockTitle += `\nclear Duration in the panel below to play it all`;
+          }
+        }
+        // dashed edge where the audio is cut short
+        const trimStyle = missing ? '' :
+          (trimmedEnd   ? 'border-right:2px dashed rgba(255,225,170,.85);' : '') +
+          (trimmedStart ? 'border-left:2px dashed rgba(255,225,170,.85);'  : '');
         bHtml += `<div class="score-block${isSel?' selected':''}"
           id="blk-${scene.id}-${ev._idx}"
-          style="left:${left}px;width:${bW}px;background:${color};${missing?'opacity:0.5;border:1px dashed #c05050':''}"
+          style="left:${left}px;width:${bW}px;background:${color};${trimStyle}${missing?'opacity:0.5;border:1px dashed #c05050':''}"
           data-atmo="${atmo}" data-si="${si}" data-evidx="${ev._idx}"
           onmousedown="blockMouseDown(event,this)"
           onclick="event.stopPropagation()"
           title="${blockTitle}">
-          <span class="score-block-label">${bW > 30 ? (missing ? '⚠ '+soundId : soundId) : ''}</span>
+          <span class="score-block-label">${bW > 30 ? (missing ? '⚠ '+soundId : (trimmedEnd||trimmedStart ? '✂ ' : '')+soundId) : ''}</span>
         </div>`;
       }
 
