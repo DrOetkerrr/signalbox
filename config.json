@@ -3,25 +3,25 @@
     "day": {
       "leds": {
         "ceiling_lower": {
-          "enabled": false,
           "brightness": 70,
+          "enabled": false,
           "flicker": false,
-          "flicker_speed": 1.5,
-          "flicker_depth": 0
+          "flicker_depth": 0,
+          "flicker_speed": 1.5
         },
         "ceiling_upper": {
-          "enabled": true,
           "brightness": 70,
+          "enabled": true,
           "flicker": true,
-          "flicker_speed": 4.3,
-          "flicker_depth": 78
+          "flicker_depth": 78,
+          "flicker_speed": 4.3
         },
         "exterior": {
-          "enabled": true,
           "brightness": 66,
+          "enabled": true,
           "flicker": false,
-          "flicker_speed": 2,
-          "flicker_depth": 0
+          "flicker_depth": 0,
+          "flicker_speed": 2
         },
         "interior": {
           "brightness": 0,
@@ -30,11 +30,11 @@
           "flicker_speed": 2
         },
         "stove": {
-          "enabled": false,
           "brightness": 61,
+          "enabled": false,
           "flicker": true,
-          "flicker_speed": 3.6,
-          "flicker_depth": 78
+          "flicker_depth": 78,
+          "flicker_speed": 3.6
         }
       },
       "loops": [
@@ -828,10 +828,10 @@
               "volume": 1
             },
             {
+              "duration": 20,
               "sound": "sf_sheep_sound",
               "start": 18.5,
-              "volume": 0.14,
-              "duration": 20
+              "volume": 0.14
             }
           ],
           "id": "id_7udedbs",
@@ -1052,7 +1052,7 @@
   },
   "meta": {
     "config_id": "f2ae17de",
-    "saved_at": "2026-09-14 13:21:07",
+    "saved_at": "2026-09-15 10:16:24",
     "saved_on": "MacBookPro-11AV"
   },
   "sounds": {
@@ -1278,6 +1278,12 @@
       "pan": 0,
       "volume": 1
     },
+    "sf_door_open_2": {
+      "file": "[SF] door open 2.wav",
+      "filter": 0,
+      "pan": 0,
+      "volume": 1
+    },
     "sf_double_cough": {
       "file": "[SF] double-cough.wav",
       "filter": 0,
@@ -1460,12 +1466,6 @@
     },
     "ui": {
       "file": "UI.wav",
-      "filter": 0,
-      "pan": 0,
-      "volume": 1
-    },
-    "sf_door_open_2": {
-      "file": "[SF] door open 2.wav",
       "filter": 0,
       "pan": 0,
       "volume": 1

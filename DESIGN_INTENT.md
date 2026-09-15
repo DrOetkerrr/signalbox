@@ -209,6 +209,28 @@ and fires one scene by hand.
 - Back returns to page one, and swiping on past the selector comes round to it too.
 - `GET /api/scenes/<atmosphere>` supplies the list.
 
+### Panel editor on the Mac (2026-09-15)
+The editor now wears the same GWR panel as the phone. Served at `/`; the plain one
+is kept at `/classic`.
+
+- One fixed 1512x982 artboard scaled to fit the window, as on the phone. Every
+  control's position is measured from the artwork and lives in
+  `design/editor-geometry.json`, which the template reads at render time.
+- **The scene panel is nine-sliced**, so it grows with its sound lanes: a scene with
+  two lanes and one with nine use the same frame. The top cut falls at artboard
+  y 515, below the SOUNDS gutter label; cut any higher and the label ghosts down
+  the well. The frame is a separate layer inside the panel, so controls keep
+  artboard coordinates rather than being pushed in by a border.
+- The scene list scrolls over its own metal tile, so the panel printed into the
+  backdrop never shows through.
+- Backdrop resolution is 1.03x rather than the 2x a retina screen wants. Only that
+  one image is thin; every control is 4x to 21x. Swapping in a larger backdrop later
+  means replacing one file and one scale number.
+- Live from the artwork: four link lamps (dev, match, diff, offline), the Day/Night
+  lever, sync and restart, simulation transport and lamp, master volume knob and
+  meter, ambient loop with its own transport and meter, the story strip with scroll
+  and restart, per-scene transport, and the nine inspector knobs.
+
 ### Storylines (2026-09-14)
 Some scenes belong to a narrative and must play in order, while the rest stay random.
 

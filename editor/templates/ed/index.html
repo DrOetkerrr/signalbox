@@ -1,0 +1,608 @@
+<meta charset="utf-8">
+<title>Jimmy's Signal Box — Atmosphere Editor</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='phone/fonts/oswald.css') }}">
+<style>
+  :root { --ink:#e4dcc6; --dim:#9a8f77; --brass:#c9a84a; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html,body {
+    height:100%; background:#0a0908; overflow:hidden; color:var(--ink);
+    font-family:'Oswald','Helvetica Neue Condensed','Arial Narrow',sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  #stage { position:absolute; transform-origin:0 0; width:1512px; height:982px; }
+  #backdrop { position:absolute; inset:0; width:1512px; height:982px; }
+
+  .ctl { position:absolute; display:block; cursor:pointer; }
+  .ctl img { width:100%; height:100%; display:block; pointer-events:none; }
+  .ctl.press { filter:brightness(1.15); }
+  .ctl.off { cursor:default; }
+  .pad { position:absolute; cursor:pointer; }
+
+  /* text and fields sit over the engraved insets */
+  .fld {
+    position:absolute; background:none; border:none; outline:none;
+    color:var(--ink); font-family:inherit; font-size:15px; letter-spacing:.02em;
+    padding:0 8px; width:100%; height:100%;
+  }
+  .fld::placeholder { color:#5d5647; }
+  .box { position:absolute; }
+  .lbl { position:absolute; color:var(--dim); font-size:12px; letter-spacing:.09em; white-space:nowrap; }
+  .val { position:absolute; display:flex; align-items:center; justify-content:center;
+         font-size:12px; letter-spacing:.06em; color:var(--dim); white-space:nowrap; }
+  select.fld { appearance:none; -webkit-appearance:none; cursor:pointer; }
+  select.fld option { background:#14110c; color:var(--ink); }
+
+  /* meters */
+  .seg { position:absolute; background:#2b2620; }
+  .seg.lit { background:#d9b94f; box-shadow:0 0 4px rgba(217,185,79,.6); }
+
+  /* sounds list */
+  #sounds { position:absolute; overflow-y:auto; overflow-x:hidden; }
+  #sounds::-webkit-scrollbar { width:6px }
+  #sounds::-webkit-scrollbar-thumb { background:#3a3227; border-radius:3px }
+  .snd { display:flex; align-items:center; gap:6px; padding:2px 6px; cursor:pointer;
+         font-size:13px; color:#b3a88e; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .snd:hover { background:rgba(200,170,90,.10); color:var(--ink) }
+  .snd .tri { color:#6f6450; font-size:10px; flex-shrink:0 }
+
+  /* the scene list: its own metal ground, so the printed panel never shows through */
+  #scenes {
+    position:absolute; overflow-y:auto; overflow-x:hidden;
+    background-image:url("{{ url_for('static', filename='ed/metal.webp') }}");
+    background-repeat:repeat;
+  }
+  #scenes::-webkit-scrollbar { width:8px }
+  #scenes::-webkit-scrollbar-thumb { background:#3a3227; border-radius:4px }
+
+  /* one scene panel: the frame is nine-sliced so it grows with its sound lanes */
+  .scene { position:relative; width:1204px; margin:0 0 12px 0; }
+  .scene > * { position:absolute }
+  /* the frame is its own layer, so every control keeps artboard coordinates */
+  .scene-frame {
+    position:absolute; inset:0; border-style:solid;
+    border-image-source:url("{{ url_for('static', filename='ed/scene.webp') }}");
+    border-image-slice:150 18 56 18 fill;
+    border-image-repeat:stretch repeat;
+    border-width:145.4px 17.4px 54.3px 17.4px;
+    pointer-events:none;
+  }
+  .scene .well { position:absolute; overflow:visible }
+
+  /* score inside the well */
+  .lane { position:absolute; left:0; right:0; }
+  .lane-label {
+    position:absolute; left:4px; top:0; height:100%; display:flex; align-items:center;
+    font-size:11px; color:#8d836c; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .blk { position:absolute; border-radius:2px; cursor:grab; overflow:hidden;
+         font-size:10px; line-height:1; display:flex; align-items:center; padding:0 4px; }
+  .blk.sel { outline:2px solid #e8c96a; outline-offset:-1px; z-index:3 }
+  .blk.gone { opacity:.45; border:1px dashed #c05050 }
+  .ruler-n { position:absolute; top:1px; font-size:9px; color:#6f6450 }
+  .playhead { position:absolute; top:0; bottom:0; width:1px; background:#e8c96a; z-index:4; display:none }
+
+  #toast { position:absolute; left:0; right:0; bottom:6px; text-align:center;
+           font-size:12px; letter-spacing:.06em; color:var(--brass); pointer-events:none }
+</style>
+
+<div id="stage">
+  <img id="backdrop" src="{{ url_for('static', filename='ed/panel.webp') }}" alt="">
+  <div id="sounds"></div>
+  <div id="scenes"></div>
+  <div id="toast"></div>
+</div>
+
+<script>
+const G = {{ geometry | tojson }};
+const IMG = "{{ url_for('static', filename='ed/') }}";
+const stage = document.getElementById('stage');
+
+/* ── fit the artboard to the window ─────────────────────────────────────────── */
+function fit() {
+  const s = Math.min(innerWidth / G.artboard.w, innerHeight / G.artboard.h);
+  stage.style.transform =
+    `translate(${(innerWidth - G.artboard.w*s)/2}px, ${(innerHeight - G.artboard.h*s)/2}px) scale(${s})`;
+  stage.dataset.scale = s;
+}
+addEventListener('resize', fit); fit();
+
+const el = (tag, cls, style, parent) => {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (style) Object.assign(e.style, style);
+  if (parent) parent.appendChild(e);
+  return e;
+};
+const box = o => ({left:o.x+'px', top:o.y+'px', width:o.w+'px', height:o.h+'px'});
+const img = (parent, name) => { const i = el('img','',{},parent); i.src = IMG+name+'.webp'; return i; };
+
+function control(parent, geo, name, onTap) {
+  const c = el('div', 'ctl', box(geo), parent);
+  img(c, name);
+  if (onTap) press(c, onTap); else c.classList.add('off');
+  c.setImage = n => { const i = c.querySelector('img'); const src = IMG+n+'.webp';
+                      if (i.getAttribute('src') !== src) i.setAttribute('src', src); };
+  return c;
+}
+function press(e, fn) {
+  e.addEventListener('pointerdown', () => e.classList.add('press'));
+  ['pointerup','pointerleave','pointercancel'].forEach(t =>
+    e.addEventListener(t, ev => { if (!e.classList.contains('press')) return;
+      e.classList.remove('press'); if (t === 'pointerup') fn(ev); }));
+}
+let toastTimer = null;
+function toast(msg, ms = 2600) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.textContent = ''; }, ms);
+}
+
+/* ── state ─────────────────────────────────────────────────────────────────── */
+let cfg = null, durations = {}, atmo = 'day', dirty = false;
+let selected = null;                 // {si, evIdx}
+let simRunning = false, paused = false, link = {reachable:false, in_sync:false};
+let masterVol = 0.5, ambientVol = 1.0;
+const PX_PER_SEC = 8;
+
+const api = (p, body) => fetch(p, body
+  ? {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)}
+  : {method:'POST'}).then(r => r.json().catch(() => ({})));
+const get = p => fetch(p).then(r => r.json());
+const setDirty = v => { dirty = v; renderHeader(); };
+const fmt = s => { s = Math.max(0, Math.round(s)); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); };
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const soundLabel = id => {
+  const s = cfg?.sounds?.[id];
+  return s?.file ? s.file.replace(/^.*[\\/]/,'').replace(/\.[^.]+$/,'') : id;
+};
+let colourOf = (() => { const m = {}; let n = 0;
+  const pal = ['#6f9a5a','#8a6f9a','#9a7a4a','#5a8a9a','#9a5a5a','#7a9a4a','#4a7a9a','#9a6a8a'];
+  return id => (m[id] ??= pal[n++ % pal.length]); })();
+</script>
+<script>
+/* ── header ────────────────────────────────────────────────────────────────── */
+const H = G.header;
+let hdr = {};
+function buildHeader() {
+  H.lamps.forEach(l => hdr[l.id] = control(stage, l, 'lamp-off'));
+  hdr.lever = control(stage, H.lever.day, 'lever-day');
+  press(el('div','pad',box(H.lever_pads.day), stage),   () => setAtmo('day'));
+  press(el('div','pad',box(H.lever_pads.night), stage), () => setAtmo('night'));
+
+  hdr.sync = control(stage, H.sync, 'push-sync', doSync);
+  hdr.restart = control(stage, H.restart, 'push-restart', doRestart);
+
+  hdr.play  = control(stage, H.transport.play,  'btn-play-off',  () => simulate(true));
+  hdr.pause = control(stage, H.transport.pause, 'btn-pause-off', () => api('/api/transport/pause').then(()=>{paused=true;renderHeader();}));
+  hdr.stop  = control(stage, H.transport.stop,  'btn-stop-off',  () => simulate(false));
+  hdr.simLamp = control(stage, H.sim_lamp, 'lamp-off');
+
+  hdr.vol = control(stage, H.volume.knob, 'knob');
+  dial(hdr.vol, () => masterVol*100, v => { masterVol = v/100; renderHeader();
+                                            queue('vol', () => api('/api/volume', {volume: masterVol})); });
+  hdr.volSegs = meter(stage, H.volume);
+
+  press(el('div','pad',box(H.revert), stage), reloadAll);
+  press(el('div','pad',box(H.save), stage),   saveConfig);
+}
+function meter(parent, m) {
+  const segs = [];
+  for (let i = 0; i < m.segments; i++)
+    segs.push(el('div','seg',{left:(m.meter_x0 + i*m.meter_dx)+'px', top:m.meter_y+'px',
+                              width:m.meter_w+'px', height:m.meter_h+'px'}, parent));
+  return segs;
+}
+const litSegs = (segs, frac) => segs.forEach((s,i) =>
+  s.classList.toggle('lit', i < Math.round(frac * segs.length)));
+
+function renderHeader() {
+  hdr.dev.setImage('lamp-green');
+  hdr.match.setImage(link.reachable && link.in_sync ? 'lamp-green' : 'lamp-off');
+  hdr.diff.setImage(link.reachable && !link.in_sync ? 'lamp-amber' : 'lamp-off');
+  hdr.offline.setImage(link.reachable ? 'lamp-off' : 'lamp-amber');
+  hdr.lever.setImage(atmo === 'night' ? 'lever-night' : 'lever-day');
+  Object.assign(hdr.lever.style, box(atmo === 'night' ? H.lever.night : H.lever.day));
+  hdr.play.setImage(simRunning && !paused ? 'btn-play-on' : 'btn-play-off');
+  hdr.pause.setImage(paused ? 'btn-pause-on' : 'btn-pause-off');
+  hdr.stop.setImage(!simRunning && !paused ? 'btn-stop-on' : 'btn-stop-off');
+  hdr.simLamp.setImage(simRunning ? 'lamp-green' : 'lamp-off');
+  hdr.vol.querySelector('img').style.transform = `rotate(${-135 + masterVol*270}deg)`;
+  litSegs(hdr.volSegs, masterVol);
+}
+
+/* a knob: drag up or round to turn it, 0 at the 135 deg mark, 270 deg of sweep */
+function dial(ctl, getPct, setPct) {
+  const K = G.inspector.knob_sweep;
+  let dragging = false, startY = 0, startV = 0;
+  const redraw = () => { ctl.querySelector('img').style.transform =
+    `rotate(${K.base_rotation_deg + getPct()/100*K.sweep_deg}deg)`; };
+  ctl.redraw = redraw; redraw();
+  ctl.addEventListener('pointerdown', e => {
+    e.preventDefault(); e.stopPropagation(); dragging = true;
+    ctl.setPointerCapture?.(e.pointerId);
+    startY = e.clientY; startV = getPct();
+  });
+  ctl.addEventListener('pointermove', e => {
+    if (!dragging) return; e.preventDefault();
+    const s = +stage.dataset.scale || 1;
+    const v = Math.max(0, Math.min(100, startV + (startY - e.clientY) / s * 0.9));
+    setPct(v); redraw();
+  });
+  ['pointerup','pointercancel'].forEach(t => ctl.addEventListener(t, () => dragging = false));
+}
+const timers = {};
+const queue = (k, fn, ms = 140) => { clearTimeout(timers[k]); timers[k] = setTimeout(fn, ms); };
+
+/* ── sidebar: the sound library ────────────────────────────────────────────── */
+function buildSidebar() {
+  Object.assign(document.getElementById('sounds').style, box(G.sidebar.list));
+  press(el('div','pad',box(G.sidebar.refresh), stage), () => { reloadAll(); toast('Sounds rescanned'); });
+}
+function renderSounds() {
+  const host = document.getElementById('sounds');
+  host.innerHTML = '';
+  Object.keys(cfg.sounds).sort((a,b) => soundLabel(a).localeCompare(soundLabel(b))).forEach(id => {
+    const r = el('div','snd',{},host);
+    el('span','tri',{},r).textContent = '▶';
+    el('span','',{},r).textContent = soundLabel(id);
+    r.title = id;
+    r.onclick = () => api('/api/play/' + encodeURIComponent(id), {volume: 1});
+  });
+}
+
+/* ── ambient loop ──────────────────────────────────────────────────────────── */
+const A = G.ambient;
+let amb = {};
+function buildAmbient() {
+  amb.play  = control(stage, A.transport.play,  'btn-play-off',  () => api('/api/transport/play/' + atmo));
+  amb.pause = control(stage, A.transport.pause, 'btn-pause-off', () => api('/api/transport/pause'));
+  amb.stop  = control(stage, A.transport.stop,  'btn-stop-off',  () => api('/api/stop_all'));
+  amb.sel = el('select','fld',{}, el('div','box',box(A.name), stage));
+  amb.sel.onchange = () => {
+    const loops = cfg.atmospheres[atmo].loops;
+    if (!amb.sel.value) { cfg.atmospheres[atmo].loops = []; }
+    else if (loops.length) loops[0].sound = amb.sel.value;
+    else loops.push({sound: amb.sel.value, volume: 1});
+    setDirty(true);
+  };
+  amb.vol = control(stage, A.volume.knob, 'knob');
+  dial(amb.vol, () => ambientVol*100, v => {
+    ambientVol = v/100;
+    const l = cfg.atmospheres[atmo].loops[0];
+    if (l) { l.volume = ambientVol; setDirty(true); }
+    litSegs(amb.segs, ambientVol);
+  });
+  amb.segs = meter(stage, A.volume);
+}
+function renderAmbient() {
+  const loop = cfg.atmospheres[atmo].loops?.[0];
+  amb.sel.innerHTML = '<option value="">— no ambient loop —</option>' +
+    Object.keys(cfg.sounds).sort((a,b)=>soundLabel(a).localeCompare(soundLabel(b)))
+      .map(id => `<option value="${esc(id)}">${esc(soundLabel(id))}</option>`).join('');
+  amb.sel.value = loop?.sound || '';
+  ambientVol = loop?.volume ?? 1;
+  amb.vol.redraw(); litSegs(amb.segs, ambientVol);
+}
+</script>
+<script>
+/* ── story strip ───────────────────────────────────────────────────────────── */
+const ST = G.story;
+let storyState = {list: [], offset: 0, name: null};
+function buildStory() {
+  press(el('div','pad',box(ST.back), stage),    () => { storyState.offset = Math.max(0, storyState.offset-1); renderStory(); });
+  press(el('div','pad',box(ST.forward), stage), () => { storyState.offset++; renderStory(); });
+  press(el('div','pad',box(ST.restart), stage), async () => {
+    if (!storyState.name) return toast('No storyline on the selected scene');
+    await api(`/api/stories/${encodeURIComponent(storyState.name)}/reset`);
+    await loadStories(); toast(`Story “${storyState.name}” restarted`);
+  });
+  ST.slots.forEach((s,i) => {
+    const b = el('div','val',{...box(s), fontSize:'12px'}, stage);
+    b.id = 'story-slot-' + i;
+  });
+}
+async function loadStories() {
+  try { storyState.list = await get('/api/stories'); } catch { storyState.list = []; }
+  renderStory();
+}
+function renderStory() {
+  const scene = selected ? cfg.atmospheres[atmo].scenes[selected.si] : null;
+  const name = scene?.story || storyState.list[0]?.name || null;
+  storyState.name = name;
+  const story = storyState.list.find(s => s.name === name);
+  const beats = story?.beats || [];
+  const at = story?.at_step ?? 0;
+  const max = Math.max(0, beats.length - ST.slots.length);
+  storyState.offset = Math.min(storyState.offset, max);
+  ST.slots.forEach((_, i) => {
+    const b = document.getElementById('story-slot-' + i);
+    const beat = beats[i + storyState.offset];
+    b.textContent = beat ? `${beat.step}. ${beat.scene}` : '';
+    b.style.color = beat && beat.step === at + 1 ? '#e8c96a' : '#9a8f77';
+    b.title = beat ? `${beat.atmosphere} — step ${beat.step} of ${beat.scene}` : '';
+  });
+}
+
+/* ── scenes ────────────────────────────────────────────────────────────────── */
+const S = G.scenes, IN = S.inner;
+function buildScenes() {
+  Object.assign(document.getElementById('scenes').style, box(S.area));
+  press(el('div','pad',box(S.add_scene), stage), addScene);
+}
+
+function sceneLanes(scene) {
+  const seen = [];
+  for (const ev of (scene.events || [])) if (!seen.includes(ev.sound)) seen.push(ev.sound);
+  return seen;
+}
+function sceneLength(scene) {
+  let end = 20;
+  for (const ev of (scene.events || []))
+    end = Math.max(end, (ev.start || 0) + (durations[ev.sound] ?? 2));
+  return end;
+}
+
+function renderScenes() {
+  const host = document.getElementById('scenes');
+  host.innerHTML = '';
+  (cfg.atmospheres[atmo].scenes || []).forEach((scene, si) => host.appendChild(sceneEl(scene, si)));
+  if (!cfg.atmospheres[atmo].scenes?.length)
+    el('div','val',{left:'0',top:'40px',width:'100%',height:'20px'}, host).textContent = 'No scenes yet';
+}
+
+function sceneEl(scene, si) {
+  // The frame's repeating band is the well interior, which begins at the top slice.
+  const TOP = 145.4, BOT = 54.3;
+  const lanes = sceneLanes(scene);
+  const wellH = S.row_h * Math.max(lanes.length, 2);
+  const p = el('div','scene',{height:(TOP + wellH + BOT) + 'px'});
+  el('div','scene-frame',{}, p);
+
+  const field = (geo, value, onChange, opts = {}) => {
+    const holder = el('div','box',box(geo), p);
+    const i = el('input','fld',{}, holder);
+    i.value = value ?? ''; if (opts.ph) i.placeholder = opts.ph;
+    if (opts.num) { i.type = 'number'; i.min = opts.min ?? 0; }
+    i.onchange = () => onChange(i.value);
+    return i;
+  };
+
+  field(IN.name, scene.name, v => { scene.name = v; setDirty(true); }, {ph:'Scene name'});
+  field(IN.min, Math.round((scene.min_interval||0)/60), v => { scene.min_interval = (+v||0)*60; setDirty(true); }, {num:true,min:0});
+  field(IN.max, Math.round((scene.max_interval||0)/60), v => { scene.max_interval = (+v||0)*60; setDirty(true); }, {num:true,min:0});
+  field(IN.story, scene.story || '', v => {
+    v = v.trim(); if (v) { scene.story = v; scene.story_step ??= 1; } else { delete scene.story; delete scene.story_step; }
+    setDirty(true); loadStories(); renderScenes();
+  }, {ph:'—'});
+  field(IN.step, scene.story_step || '', v => {
+    const n = parseInt(v); if (n > 0) scene.story_step = n; else delete scene.story_step;
+    setDirty(true); loadStories();
+  }, {num:true, min:1, ph:'—'});
+
+  const t = IN.transport;
+  control(p, t.play,  'btn-play-off',  () => api(`/api/preview/${atmo}/${scene.id}`).then(()=>toast('Playing “'+(scene.name||'scene')+'”')));
+  control(p, t.pause, 'btn-pause-off', () => api('/api/transport/pause'));
+  control(p, t.stop,  'btn-stop-off',  () => api('/api/preview/stop'));
+  const more = el('div','pad',box(IN.more), p);
+  press(more, () => toast(scene.story ? `Story “${scene.story}”, step ${scene.story_step}` : 'No storyline on this scene'));
+  control(p, IN.remove, 'bin', () => {
+    if (!confirm(`Remove the scene “${scene.name || scene.id}”?`)) return;
+    cfg.atmospheres[atmo].scenes.splice(si,1); selected = null; setDirty(true); renderScenes();
+  });
+
+  // add-a-lane row
+  // the footer row rides the bottom of the panel, wherever the lanes end
+  const foot = g => ({...g, y: TOP + wellH + (g.y - (IN.well.y + IN.well.h))});
+  const SEL = foot(IN.sound_sel), ADD = foot(IN.add_row), DEL = foot(IN.delete);
+  const selHolder = el('div','box',box(SEL), p);
+  const sel = el('select','fld',{}, selHolder);
+  sel.innerHTML = '<option value="">choose a sound…</option>' +
+    Object.keys(cfg.sounds).sort((a,b)=>soundLabel(a).localeCompare(soundLabel(b)))
+      .map(id => `<option value="${esc(id)}">${esc(soundLabel(id))}</option>`).join('');
+  press(el('div','pad',box(ADD), p), () => {
+    if (!sel.value) return toast('Pick a sound first');
+    scene.events ??= [];
+    scene.events.push({sound: sel.value, start: 0, volume: 1});
+    setDirty(true); renderScenes();
+  });
+  control(p, DEL, 'bin', () => {
+    if (!selected || selected.si !== si) return toast('Select a block first');
+    scene.events.splice(selected.evIdx,1); selected = null; setDirty(true); renderScenes(); renderInspector();
+  });
+
+  // the well and its score
+  const well = el('div','well',{left:IN.well.x+'px', top:TOP+'px',
+                                width:IN.well.w+'px', height:wellH+'px'}, p);
+  drawScore(well, scene, si, lanes);
+  return p;
+}
+</script>
+<script>
+/* ── the score inside a scene's well ───────────────────────────────────────── */
+function drawScore(well, scene, si, lanes) {
+  const gutter = IN.gutter_w;
+  const total = sceneLength(scene);
+  const pps = Math.max(2, (IN.well.w - gutter - 8) / Math.max(total, 20));
+
+  // ruler figures across the top
+  const step = total > 300 ? 60 : total > 120 ? 30 : 10;
+  for (let t = 0; t <= total; t += step) {
+    const n = el('div','ruler-n',{left:(gutter + t*pps + 2)+'px', top:'-13px'}, well);
+    n.textContent = t + 's';
+  }
+
+  lanes.forEach((sound, li) => {
+    const lane = el('div','lane',{top:(li*S.row_h)+'px', height:S.row_h+'px'}, well);
+    const lab = el('div','lane-label',{width:(gutter-8)+'px'}, lane);
+    lab.textContent = soundLabel(sound); lab.title = sound;
+    const missing = !(sound in cfg.sounds);
+    if (missing) { lab.style.color = '#c05050'; lab.textContent = '⚠ ' + sound; }
+
+    (scene.events || []).forEach((ev, evIdx) => {
+      if (ev.sound !== sound) return;
+      const full = durations[sound] ?? 2;
+      const dur = (ev.duration && ev.duration > 0) ? Math.min(ev.duration, full) : full;
+      const trimmed = dur < full - 0.05 || (ev.offset || 0) > 0.05;
+      const b = el('div','blk',{
+        left:(gutter + (ev.start||0)*pps)+'px', top:'5px',
+        width:Math.max(5, dur*pps)+'px', height:(S.row_h-10)+'px',
+        background: missing ? '#7a2020' : colourOf(sound),
+        opacity: String(ev.volume ?? 1),
+      }, lane);
+      if (missing) b.classList.add('gone');
+      if (selected && selected.si === si && selected.evIdx === evIdx) b.classList.add('sel');
+      b.textContent = dur*pps > 34 ? (trimmed ? '✂ ' : '') + soundLabel(sound) : '';
+      b.title = `${soundLabel(sound)} @ ${(ev.start||0).toFixed(1)}s` +
+                (trimmed ? `\nplaying ${dur.toFixed(1)}s of ${full.toFixed(1)}s` : '');
+      dragBlock(b, ev, si, evIdx, pps, gutter, well);
+    });
+  });
+}
+
+function dragBlock(b, ev, si, evIdx, pps, gutter, well) {
+  let down = false, x0 = 0, s0 = 0, moved = false;
+  b.addEventListener('pointerdown', e => {
+    e.preventDefault(); e.stopPropagation();
+    down = true; moved = false; x0 = e.clientX; s0 = ev.start || 0;
+    b.setPointerCapture?.(e.pointerId);
+    selected = {si, evIdx}; renderInspector(); renderStory();
+    document.querySelectorAll('.blk.sel').forEach(n => n.classList.remove('sel'));
+    b.classList.add('sel');
+  });
+  b.addEventListener('pointermove', e => {
+    if (!down) return;
+    const s = +stage.dataset.scale || 1;
+    const dx = (e.clientX - x0) / s;
+    if (Math.abs(dx) > 2) moved = true;
+    const t = Math.max(0, Math.round((s0 + dx/pps) * 2) / 2);
+    ev.start = t; b.style.left = (gutter + t*pps) + 'px';
+    b.title = `${soundLabel(ev.sound)} @ ${t.toFixed(1)}s`;
+  });
+  ['pointerup','pointercancel'].forEach(t => b.addEventListener(t, () => {
+    if (!down) return; down = false; if (moved) { setDirty(true); renderScenes(); }
+  }));
+}
+
+/* ── inspector ─────────────────────────────────────────────────────────────── */
+const I = G.inspector;
+const KNOB_RANGE = {
+  volume:{min:0,max:1,unit:'%',scale:100}, pan:{min:-1,max:1,unit:'',scale:100},
+  filter:{min:0,max:20000,unit:'Hz',scale:1}, offset:{min:0,max:60,unit:'s',scale:1},
+  duration:{min:0,max:180,unit:'s',scale:1}, fade_in:{min:0,max:10,unit:'s',scale:1},
+  fade_out:{min:0,max:10,unit:'s',scale:1}, reverb_room:{min:0,max:1,unit:'%',scale:100},
+  reverb_wet:{min:0,max:1,unit:'%',scale:100},
+};
+let insp = {};
+function buildInspector() {
+  insp.name = el('div','val',{...box(I.name), fontSize:'14px', color:'#e4dcc6'}, stage);
+  insp.knobs = {};
+  I.knobs.forEach(k => {
+    const geo = {x:k.x, y:k.y, w:I.knob_size, h:I.knob_size};
+    const c = control(stage, geo, 'knob');
+    const r = KNOB_RANGE[k.id];
+    dial(c,
+      () => { const ev = currentEvent(); if (!ev) return 0;
+              const raw = ev[k.id] ?? (k.id === 'volume' ? 1 : 0);
+              return (raw - r.min) / (r.max - r.min) * 100; },
+      pct => { const ev = currentEvent(); if (!ev) return;
+               ev[k.id] = +(r.min + pct/100*(r.max - r.min)).toFixed(k.id==='filter'?0:3);
+               setDirty(true); renderInspectorValues();
+               queue('score', () => renderScenes(), 260); });
+    const v = el('div','val',{left:(k.x-12)+'px', top:(k.y+I.knob_size+1)+'px',
+                              width:(I.knob_size+24)+'px', height:'14px', fontSize:'11px'}, stage);
+    insp.knobs[k.id] = {ctl:c, val:v};
+  });
+}
+const currentEvent = () => selected
+  ? cfg?.atmospheres?.[atmo]?.scenes?.[selected.si]?.events?.[selected.evIdx] : null;
+
+function renderInspector() {
+  const ev = currentEvent();
+  insp.name.textContent = ev ? soundLabel(ev.sound) : '—';
+  insp.name.style.color = ev ? '#e4dcc6' : '#5d5647';
+  Object.values(insp.knobs).forEach(k => k.ctl.redraw());
+  renderInspectorValues();
+}
+function renderInspectorValues() {
+  const ev = currentEvent();
+  I.knobs.forEach(k => {
+    const r = KNOB_RANGE[k.id], cell = insp.knobs[k.id];
+    if (!ev) { cell.val.textContent = ''; return; }
+    const raw = ev[k.id] ?? (k.id === 'volume' ? 1 : 0);
+    cell.val.textContent =
+        k.id === 'pan'  ? (Math.abs(raw) < 0.02 ? 'C'
+                          : (raw < 0 ? 'L' : 'R') + Math.round(Math.abs(raw)*100))
+      : r.unit === '%'  ? Math.round(raw*100) + '%'
+      : r.unit === 'Hz' ? (raw ? Math.round(raw) + ' Hz' : 'off')
+      : (+raw).toFixed(1) + 's';
+    cell.ctl.redraw();
+  });
+}
+
+/* ── actions ───────────────────────────────────────────────────────────────── */
+async function setAtmo(a) {
+  if (a === atmo) return;
+  atmo = a; selected = null;
+  await api('/api/atmosphere', {atmosphere: a});
+  renderAll();
+}
+function addScene() {
+  cfg.atmospheres[atmo].scenes.push({
+    id: 'id_' + Math.random().toString(36).slice(2,9),
+    name: 'New scene', min_interval: 120, max_interval: 240, events: []});
+  setDirty(true); renderScenes();
+  document.getElementById('scenes').scrollTop = 1e6;
+}
+async function saveConfig() {
+  const r = await fetch('/api/config', {method:'POST', headers:{'Content-Type':'application/json'},
+                                        body: JSON.stringify(cfg, null, 2)});
+  if (!r.ok) return toast('Save failed');
+  setDirty(false); toast('Saved'); pollLink();
+}
+async function simulate(on) {
+  if (on) { await api('/api/simulate/' + atmo); simRunning = true; paused = false; }
+  else    { await api('/api/stop_all');        simRunning = false; paused = false; }
+  renderHeader();
+}
+async function doSync() {
+  toast('Syncing to the Pi…', 60000);
+  const r = await api('/api/sync');
+  toast(r.ok ? 'Synced' : ('Sync failed: ' + (r.error || 'see the log')), 5000);
+  setTimeout(pollLink, 8000);
+}
+async function doRestart() { toast('Restarting the editor…', 8000); await api('/api/restart'); }
+
+async function pollLink() {
+  try { const d = await get('/api/pi/status');
+        link = {reachable: !!d.reachable, in_sync: !!d.in_sync}; }
+  catch { link = {reachable:false, in_sync:false}; }
+  renderHeader();
+}
+async function pollState() {
+  try {
+    const [sim, ps] = await Promise.all([get('/api/simulate/status'), get('/api/phone/status')]);
+    simRunning = !!sim.running;
+    if (typeof ps.volume === 'number') { masterVol = ps.volume; }
+    renderHeader();
+  } catch {}
+}
+
+/* ── boot ──────────────────────────────────────────────────────────────────── */
+function renderAll() {
+  renderHeader(); renderSounds(); renderAmbient(); renderScenes(); renderInspector(); renderStory();
+}
+async function reloadAll() {
+  const [c, d] = await Promise.all([get('/api/config'), get('/api/sound_durations')]);
+  cfg = c; durations = d; selected = null; dirty = false;
+  await loadStories();
+  renderAll();
+}
+(async function boot() {
+  buildHeader(); buildSidebar(); buildAmbient(); buildStory(); buildScenes(); buildInspector();
+  await reloadAll();
+  await pollState(); await pollLink();
+  setInterval(pollState, 1500);
+  setInterval(pollLink, 7000);
+  addEventListener('beforeunload', e => { if (dirty) { e.preventDefault(); e.returnValue = ''; } });
+})();
+</script>

@@ -996,7 +996,31 @@ def health():
     })
 
 
+GEOM_EDITOR = os.path.join(BASE, "design", "editor-geometry.json")
+_ed_geom = {"mtime": 0, "data": None}
+
+
+def editor_geometry():
+    try:
+        m = os.path.getmtime(GEOM_EDITOR)
+        if m != _ed_geom["mtime"]:
+            with open(GEOM_EDITOR) as f:
+                _ed_geom.update(mtime=m, data=json.load(f))
+    except Exception as e:
+        print(f"[editor geometry] {e}")
+    return _ed_geom["data"]
+
+
 @app.route("/")
+def index_panel():
+    """The panel editor. Falls back to the plain one if the layout file is missing."""
+    geo = editor_geometry()
+    if not geo:
+        return index()
+    return render_template("ed/index.html", geometry=geo)
+
+
+@app.route("/classic")
 def index():
     peer = MAC_URL if _GPIO_AVAILABLE else PI_URL
     return render_template("index.html", is_pi=_GPIO_AVAILABLE,
