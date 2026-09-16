@@ -228,12 +228,22 @@ function stagePoint(ev) {
   const t = ev.touches ? ev.touches[0] : ev;
   return { x: (t.clientX - +st.dataset.ox)/s, y: (t.clientY - +st.dataset.oy)/s };
 }
-function knobFromPoint(p) {
-  let bearing = Math.atan2(p.y - K.cy, p.x - K.cx) * 180/Math.PI;
-  let rel = ((bearing - K.zero_bearing_deg) % 360 + 360) % 360;
+/* The knob is relative: it turns from where it is by the angle the finger sweeps
+   round its centre, one degree for one degree, and a touch alone changes nothing.
+   Close to the centre a bearing is meaningless, so there the finger slides the
+   volume up and down instead, the full range over SLIDE_PX of travel. */
+const SLIDE_PX = 180, SLIDE_R = K.size * 0.28;
+const bearingOf = p => Math.atan2(p.y - K.cy, p.x - K.cx) * 180/Math.PI;
+const wrap180 = d => ((d + 540) % 360) - 180;
+let volLast = null;
+function turnKnob(p) {
+  const r = Math.hypot(p.x - K.cx, p.y - K.cy);
+  let deg = pctToDeg(volume);
+  if (r < SLIDE_R || volLast.r < SLIDE_R) deg += (volLast.y - p.y) * (K.refs[K.refs.length-1][1] / SLIDE_PX);
+  else                                    deg += wrap180(bearingOf(p) - volLast.b);
   const span = K.refs[K.refs.length-1][1];
-  if (rel > span) rel = (rel > (span + 360)/2) ? 0 : span;   // outside the sweep: snap to nearest end
-  return degToPct(rel);
+  volume = degToPct(Math.max(0, Math.min(span, deg)));
+  volLast = {x: p.x, y: p.y, r, b: bearingOf(p)};
 }
 function sendVolume() {
   hold();
@@ -243,11 +253,13 @@ function sendVolume() {
 kw.addEventListener('pointerdown', e => {
   e.preventDefault(); volDrag = true;
   capture(kw, e);
-  volume = knobFromPoint(stagePoint(e)); drawKnob(); sendVolume();
+  const p = stagePoint(e);
+  volLast = {x: p.x, y: p.y, r: Math.hypot(p.x - K.cx, p.y - K.cy), b: bearingOf(p)};
+  hold();
 });
 kw.addEventListener('pointermove', e => {
   if (!volDrag) return; e.preventDefault();
-  volume = knobFromPoint(stagePoint(e)); drawKnob(); sendVolume();
+  turnKnob(stagePoint(e)); drawKnob(); sendVolume();
 });
 ['pointerup','pointercancel'].forEach(t => kw.addEventListener(t, () => { volDrag = false; }));
 
