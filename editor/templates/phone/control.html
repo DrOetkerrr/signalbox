@@ -270,18 +270,26 @@ function capture(el, e) {
 }
 
 /* ── api helper ────────────────────────────────────────────────────────────── */
+// A Pi that has been switched off does not refuse a request, it lets it hang —
+// on the phone for a minute or more. Every request gives up after REQUEST_MS so
+// the lamp can go out, and the watchdog below does not depend on it.
+const REQUEST_MS = 2500;
+function timed(path, opt = {}) {
+  const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), REQUEST_MS);
+  return fetch(path, {...opt, signal: ctl.signal}).finally(() => clearTimeout(t));
+}
 async function api(path, body) {
   const opt = body ? {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)}
                    : {method:'POST'};
   try {
-    const r = await fetch(path, opt);
+    const r = await timed(path, opt);
     const d = await r.json().catch(() => ({}));
     return Object.assign(d, {_ok: r.ok, _status: r.status});
   } catch (e) {
     return {_ok: false, _status: 0, error: 'no connection'};
   }
 }
-const get = p => fetch(p).then(r => r.json());
+const get = p => timed(p).then(r => r.json());
 
 /* ── UI state ──────────────────────────────────────────────────────────────── */
 let atmo = 'day', playing = false, paused = false, ledTest = false, online = false;
@@ -928,11 +936,14 @@ async function boot() {
   } catch { online = false; }
   render();
 }
+let ticking = false, lastOk = Date.now();   // not 0: the watchdog must not fire before the first poll
 async function tick() {
+  if (ticking) return;                       // never stack polls behind a slow one
+  ticking = true;
   try {
     const s = await get('/api/phone/status');
     const sim = s.simulate, pv = s.preview;
-    online = true; trackReboot(true);
+    online = true; lastOk = Date.now(); trackReboot(true);
     if (!volDrag && typeof s.volume === 'number') {
       const v = Math.round(s.volume * 100);
       if (v !== volume) { volume = v; drawKnob(); }
@@ -965,7 +976,15 @@ async function tick() {
     trackReboot(false); setNextLine('');
     if (online) { online = false; render(); }
     showIdle(rebooting ? 'Rebooting…' : (Date.now() < flashUntil ? flashMsg : null));
-  }
+  } finally { ticking = false; }
 }
-boot().then(() => { tick(); setInterval(tick, 900); });
+// The watchdog: whatever the requests are doing, no good answer for a while means offline.
+const OFFLINE_AFTER_MS = 3000;
+setInterval(() => {
+  if (online && Date.now() - lastOk > OFFLINE_AFTER_MS) {
+    online = false; setNextLine(''); render();
+    showIdle(rebooting ? 'Rebooting…' : null);
+  }
+}, 500);
+boot().then(() => { lastOk = Date.now(); tick(); setInterval(tick, 900); });
 </script>
