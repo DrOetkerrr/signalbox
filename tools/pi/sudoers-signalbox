@@ -1,0 +1,4 @@
+# Installed on the Pi as /etc/sudoers.d/020_signalbox (mode 0440).
+# The Flask service runs as "signalbox" with no terminal, so sudo cannot ask for
+# a password. Only the two commands the app needs are allowed without one.
+signalbox ALL=(root) NOPASSWD: /usr/sbin/reboot, /usr/bin/systemctl restart signalbox

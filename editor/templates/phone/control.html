@@ -63,6 +63,11 @@
     overflow:hidden; text-overflow:ellipsis; max-width:100%;
   }
   #sel-info-sub { font-size:14px; line-height:16px; color:#a2977f; font-variant-numeric:tabular-nums; }
+  /* a thin progress line along the foot of the box; the whole box scrubs by finger */
+  #sel-info { touch-action:none; }
+  #sel-info-bar { position:absolute; left:10px; right:10px; bottom:5px; height:3px; background:#2a2620; border-radius:2px; }
+  #sel-info-fill { height:100%; width:0; background:#d9b94f; border-radius:2px; }
+  #sel-info.scrubbing #sel-info-sub { color:#e8c96a; }
   .sel-hit { position:absolute; cursor:pointer; }
   .ctl { position:absolute; display:block; }
   .ctl img { width:100%; height:100%; display:block; pointer-events:none; }
@@ -667,6 +672,9 @@ function buildSelectorPage(index) {
   const info = el('div', '', box(SEL.info), page); info.id = 'sel-info';
   el('div', '', {}, info).id = 'sel-info-name';
   el('div', '', {}, info).id = 'sel-info-sub';
+  const bar = el('div', '', {}, info); bar.id = 'sel-info-bar';
+  el('div', '', {}, bar).id = 'sel-info-fill';
+  scrubInfo(info);
 
   ['play','pause','stop'].forEach(k => {
     const c = el('div', 'ctl hit', {}, page); c.id = 'sel-' + k;
@@ -770,16 +778,45 @@ function drawDrum() {
 
 const fmtClock = s => { s = Math.max(0, Math.round(s)); return Math.floor(s/60) + ':' + String(s%60).padStart(2,'0'); };
 
+let selLive = {elapsed: 0, total: 0}, scrubbing = false;
 function drawSelInfo(elapsed, total) {
   const nameEl = document.getElementById('sel-info-name');
   const subEl  = document.getElementById('sel-info-sub');
+  const fill   = document.getElementById('sel-info-fill');
   if (!nameEl) return;
   const sc = selScenes[Math.round(selIndex)];
-  if (!sc) { nameEl.textContent = 'No scenes'; subEl.textContent = ''; return; }
+  if (!sc) { nameEl.textContent = 'No scenes'; subEl.textContent = ''; fill.style.width = '0'; return; }
   nameEl.textContent = sc.name;
   const live = selPlayingId === sc.id && total > 0;
+  selLive = live ? {elapsed, total} : {elapsed: 0, total: 0};
+  if (scrubbing) return;                              // the finger owns the readout until it lifts
   subEl.textContent = live ? `${fmtClock(elapsed)} / ${fmtClock(total)}`
                            : (sc.length ? fmtClock(sc.length) : '');
+  fill.style.width = live ? Math.min(100, elapsed / total * 100) + '%' : '0';
+}
+
+// Drag a finger across the info box to move through the playing scene. The
+// readout and bar follow the finger; the Pi seeks when it lifts.
+function scrubInfo(info) {
+  const at = e => { const r = info.getBoundingClientRect();
+                    return Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)) * selLive.total; };
+  let t = 0;
+  const show = () => { document.getElementById('sel-info-sub').textContent = `${fmtClock(t)} / ${fmtClock(selLive.total)}`;
+                       document.getElementById('sel-info-fill').style.width = (t / selLive.total * 100) + '%'; };
+  info.addEventListener('pointerdown', e => {
+    if (!selLive.total || !selPlayingId) return;
+    scrubbing = true; info.classList.add('scrubbing'); capture(info, e); t = at(e); show();
+  });
+  info.addEventListener('pointermove', e => { if (scrubbing) { t = at(e); show(); } });
+  const lift = async e => {
+    if (!scrubbing) return;
+    scrubbing = false; info.classList.remove('scrubbing');
+    if (e.type === 'pointercancel') return;
+    t = at(e); show(); hold(); selLive.elapsed = t;
+    await api(`/api/preview/${atmo}/${selPlayingId}`, {start_at: t});
+  };
+  info.addEventListener('pointerup', lift);
+  info.addEventListener('pointercancel', lift);
 }
 
 async function loadScenes() {

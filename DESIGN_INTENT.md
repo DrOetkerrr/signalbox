@@ -250,6 +250,21 @@ is kept at `/classic`.
   meter, ambient loop with its own transport and meter, the story strip with scroll
   and restart, per-scene transport, and the nine inspector knobs.
 
+### Phone fixes after the first standalone boot (2026-09-16)
+- **Reboot from the phone needs a sudo rule.** The Flask service runs as `signalbox`
+  with no terminal, so `sudo reboot` silently asked for a password and nothing
+  happened while the lamp blinked. `tools/pi/sudoers-signalbox` (installed as
+  `/etc/sudoers.d/020_signalbox`, mode 0440) allows exactly `/usr/sbin/reboot` and
+  `systemctl restart signalbox` without one. `/api/reboot` checks the rule first and
+  reports "not permitted" instead of blinking at nothing. Re-imaging the Pi means
+  reinstalling that file.
+- The scene-selector page's background had the Day/Night lever printed into it, so
+  Night showed two levers. The printed one is painted over with the main panel's
+  empty hole (feathered), and only the live lever image remains.
+- **Scrub by finger** on the selector's info box: a thin progress line runs along
+  its foot; dragging across the box moves the readout and bar, and the Pi seeks to
+  that moment when the finger lifts (`/api/preview/<atmo>/<id>` with `start_at`).
+
 ### Storylines (2026-09-14)
 Some scenes belong to a narrative and must play in order, while the rest stay random.
 

@@ -1302,7 +1302,14 @@ def led_test_status():
 def reboot():
     if not _GPIO_AVAILABLE:
         return jsonify({"error": "Pi only"}), 403
-    threading.Timer(1.0, lambda: os.system("sudo reboot")).start()
+    # The service has no terminal, so sudo can never ask for a password. Check the
+    # rule first (tools/pi/sudoers-signalbox) and say so, rather than blinking the
+    # lamp at a reboot that silently never happens.
+    allowed = subprocess.run(["sudo", "-n", "-l", "/usr/sbin/reboot"],
+                             capture_output=True).returncode == 0
+    if not allowed:
+        return jsonify({"error": "Reboot not permitted: install tools/pi/sudoers-signalbox"}), 500
+    threading.Timer(1.0, lambda: subprocess.run(["sudo", "-n", "/usr/sbin/reboot"])).start()
     return jsonify({"ok": True})
 
 
