@@ -41,7 +41,7 @@
   /* sounds list: rows sit on the lines printed in the well, and scrolling snaps to them.
      The panel's own scrollbar track is printed too, so the thumb is drawn over it. */
   #sounds { position:absolute; overflow-y:auto; overflow-x:hidden; scrollbar-width:none;
-            scroll-snap-type:y mandatory; background:#12181a; }
+            scroll-snap-type:y mandatory; background:#0f1317; }
   #sounds::-webkit-scrollbar { display:none }
   .snd { display:flex; align-items:center; gap:6px; padding:0 6px 0 10px; cursor:pointer;
          font-size:14px; color:#b3a88e; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
@@ -49,8 +49,8 @@
   .snd:hover { background:rgba(200,170,90,.10); color:var(--ink) }
   .snd.playing { color:var(--brass) }
   .snd .tri { color:#6f6450; font-size:10px; flex-shrink:0 }
-  #sounds-track { position:absolute; background:#0f1415; border-radius:3px; pointer-events:none }
-  #sounds-thumb { position:absolute; left:0; width:100%; background:#445056; border-radius:3px }
+  #sounds-track { position:absolute; background:#0b0b08; border-radius:6px; pointer-events:none }
+  #sounds-thumb { position:absolute; left:2px; right:2px; background:#3a3a36; border-radius:5px }
 
   /* the scene list: its own metal ground, so the printed panel never shows through */
   #scenes {
@@ -126,8 +126,11 @@ function control(parent, geo, name, onTap) {
   const c = el('div', 'ctl', box(geo), parent);
   img(c, name);
   if (onTap) press(c, onTap); else c.classList.add('off');
-  c.setImage = n => { const i = c.querySelector('img'); const src = IMG+n+'.webp';
+  c.setImage = n => { const i = c.querySelector('img');
+                      if (!n) { i.style.visibility = 'hidden'; return; }         // the printed panel shows the OFF state
+                      i.style.visibility = ''; const src = IMG+n+'.webp';
                       if (i.getAttribute('src') !== src) i.setAttribute('src', src); };
+  c.setBox = geo => Object.assign(c.style, box(geo));
   return c;
 }
 function press(e, fn) {
@@ -170,18 +173,18 @@ let colourOf = (() => { const m = {}; let n = 0;
 const H = G.header;
 let hdr = {};
 function buildHeader() {
-  H.lamps.forEach(l => hdr[l.id] = control(stage, l, 'lamp-off'));
+  H.lamps.forEach(l => hdr[l.id] = control(stage, l.off, 'lamp-off'));
   hdr.lever = control(stage, H.lever.day, 'lever-day');
   press(el('div','pad',box(H.lever_pads.day), stage),   () => setAtmo('day'));
   press(el('div','pad',box(H.lever_pads.night), stage), () => setAtmo('night'));
 
-  hdr.sync = control(stage, H.sync, 'push-sync', doSync);
-  hdr.restart = control(stage, H.restart, 'push-restart', doRestart);
+  press(el('div','pad',box(H.sync), stage),    doSync);
+  press(el('div','pad',box(H.restart), stage), doRestart);
 
-  hdr.play  = control(stage, H.transport.play,  'btn-play-off',  () => simulate(true));
-  hdr.pause = control(stage, H.transport.pause, 'btn-pause-off', togglePause); hdr.pause.classList.add('pause-btn');
-  hdr.stop  = control(stage, H.transport.stop,  'btn-stop-off',  () => simulate(false));
-  hdr.simLamp = control(stage, H.sim_lamp, 'lamp-off');
+  hdr.play  = control(stage, H.transport.play,  'btn-play-green',  () => simulate(true));
+  hdr.pause = pauseBtn(stage, H.transport.pause, 'btn-pause-green');
+  hdr.stop  = control(stage, H.transport.stop,  'btn-stop-green',  () => simulate(false));
+  hdr.simLamp = control(stage, H.sim_lamp.off, 'lamp-off');
 
   hdr.vol = control(stage, H.volume.knob, 'knob');
   dial(hdr.vol, () => masterVol*100, v => { masterVol = v/100; renderHeader();
@@ -202,23 +205,31 @@ const litSegs = (segs, frac) => segs.forEach((s,i) =>
   s.classList.toggle('lit', i < Math.round(frac * segs.length)));
 
 /* the mixer pauses as a whole, so one toggle serves the header, the loop and the scenes */
+function pauseBtn(parent, geo, litImg) {
+  const c = control(parent, geo, litImg, togglePause);
+  c.classList.add('pause-btn'); c.dataset.lit = litImg; c.setImage(paused ? litImg : null);
+  return c;
+}
+const drawPauseBtns = () => document.querySelectorAll('.ctl.pause-btn').forEach(c => c.setImage(paused ? c.dataset.lit : null));
 async function togglePause() {
   await api(paused ? '/api/transport/unpause' : '/api/transport/pause');
-  paused = !paused; renderHeader();
-  document.querySelectorAll('.ctl.pause-btn').forEach(c => c.setImage(paused ? 'btn-pause-on' : 'btn-pause-off'));
+  paused = !paused; renderHeader(); drawPauseBtns();
 }
-const unpaused = () => { paused = false; document.querySelectorAll('.ctl.pause-btn').forEach(c => c.setImage('btn-pause-off')); };
+const unpaused = () => { paused = false; drawPauseBtns(); };
+// a lamp sits in its off box or its (slightly larger) on box, depending on the artwork
+const lamp = (c, geo, colour) => { c.setBox(colour ? geo.on : geo.off); c.setImage(colour ? 'lamp-' + colour : 'lamp-off'); };
 
 function renderHeader() {
-  hdr.match.setImage(link.reachable && link.in_sync ? 'lamp-green' : 'lamp-off');
-  hdr.diff.setImage(link.reachable && !link.in_sync ? 'lamp-amber' : 'lamp-off');
-  hdr.offline.setImage(link.reachable ? 'lamp-off' : 'lamp-amber');
+  const L = Object.fromEntries(H.lamps.map(l => [l.id, l]));
+  lamp(hdr.dev,     L.dev,     'green');                                   // this editor is the dev server
+  lamp(hdr.match,   L.match,   link.reachable && link.in_sync  ? 'green' : null);
+  lamp(hdr.diff,    L.diff,    link.reachable && !link.in_sync ? 'amber' : null);
+  lamp(hdr.offline, L.offline, link.reachable ? null : 'amber');
   hdr.lever.setImage(atmo === 'night' ? 'lever-night' : 'lever-day');
-  Object.assign(hdr.lever.style, box(atmo === 'night' ? H.lever.night : H.lever.day));
-  hdr.play.setImage(simRunning && !paused ? 'btn-play-on' : 'btn-play-off');
-  hdr.pause.setImage(paused ? 'btn-pause-on' : 'btn-pause-off');
-  hdr.stop.setImage(!simRunning && !paused ? 'btn-stop-on' : 'btn-stop-off');
-  hdr.simLamp.setImage(simRunning ? 'lamp-green' : 'lamp-off');
+  hdr.lever.setBox(atmo === 'night' ? H.lever.night : H.lever.day);
+  hdr.play.setImage(simRunning && !paused ? 'btn-play-green' : null);
+  hdr.stop.setImage(!simRunning && !paused ? 'btn-stop-green' : null);
+  lamp(hdr.simLamp, H.sim_lamp, simRunning ? 'green' : null);
   hdr.vol.querySelector('img').style.transform = `rotate(${-135 + masterVol*270}deg)`;
   litSegs(hdr.volSegs, masterVol);
 }
@@ -278,10 +289,11 @@ function renderSounds() {
 const A = G.ambient;
 let amb = {};
 function buildAmbient() {
-  amb.play  = control(stage, A.transport.play,  'btn-play-off',  () => { unpaused(); api('/api/transport/play/' + atmo); });
-  amb.pause = control(stage, A.transport.pause, 'btn-pause-off', togglePause);
-  amb.pause.classList.add('pause-btn');
-  amb.stop  = control(stage, A.transport.stop,  'btn-stop-off',  () => { unpaused(); api('/api/stop_all'); });
+  amb.play  = control(stage, A.transport.play,  'btn-play-red',  () => { unpaused(); api('/api/transport/play/' + atmo); amb.on(true); });
+  amb.pause = pauseBtn(stage, A.transport.pause, 'btn-pause-red');
+  amb.stop  = control(stage, A.transport.stop,  'btn-stop-red',  () => { unpaused(); api('/api/stop_all'); amb.on(false); });
+  amb.on = playing => { amb.play.setImage(playing ? 'btn-play-red' : null); amb.stop.setImage(playing ? null : 'btn-stop-red'); };
+  amb.on(false);
   amb.sel = el('select','fld',{}, el('div','box',box(A.name), stage));
   amb.sel.onchange = () => {
     const loops = cfg.atmospheres[atmo].loops;
@@ -415,9 +427,11 @@ function sceneEl(scene, si) {
   }, {num:true, min:1, ph:'—'});
 
   const t = IN.transport;
-  control(p, t.play,  'btn-play-off',  () => previewScene(scene, 0));
-  control(p, t.pause, 'btn-pause-off', togglePause).classList.add('pause-btn');
-  control(p, t.stop,  'btn-stop-off',  () => { unpaused(); api('/api/preview/stop'); stopPreviewPoll(); });
+  // play lights while this scene previews (see the preview poll); stop and pause light when pressed
+  const playBtn = control(p, t.play, 'btn-play-green', () => previewScene(scene, 0));
+  playBtn.classList.add('scene-play'); playBtn.setImage(null);
+  pauseBtn(p, t.pause, 'btn-pause-green');
+  control(p, t.stop,  'btn-stop-green',  () => { unpaused(); api('/api/preview/stop'); stopPreviewPoll(); }).setImage(null);
   const more = el('div','pad',box(IN.more), p);
   press(more, () => toast(scene.story ? `Story “${scene.story}”, step ${scene.story_step}` : 'No storyline on this scene'));
   control(p, IN.remove, 'delete-x', () => {
@@ -514,16 +528,16 @@ async function previewScene(scene, startAt) {
   previewTimer = setInterval(async () => {
     let s; try { s = await get('/api/preview/status'); } catch { return; }
     const p = document.querySelector(`.scene[data-id="${s.scene_id}"]`);
-    document.querySelectorAll('.scene.previewing').forEach(n => n !== p && n.classList.remove('previewing'));
+    document.querySelectorAll('.scene.previewing').forEach(n => { if (n !== p) { n.classList.remove('previewing'); n.querySelector('.scene-play').setImage(null); } });
     if (!s.playing || !p) return stopPreviewPoll();
-    p.classList.add('previewing');
+    p.classList.add('previewing'); p.querySelector('.scene-play').setImage('btn-play-green');
     const well = p.querySelector('.well');
     well.querySelector('.playhead').style.left = (+well.dataset.gutter + s.elapsed * +well.dataset.pps) + 'px';
   }, 200);
 }
 function stopPreviewPoll() {
   clearInterval(previewTimer); previewTimer = null;
-  document.querySelectorAll('.scene.previewing').forEach(n => n.classList.remove('previewing'));
+  document.querySelectorAll('.scene.previewing').forEach(n => { n.classList.remove('previewing'); n.querySelector('.scene-play').setImage(null); });
 }
 
 function dragBlock(b, ev, si, evIdx, pps, gutter, well) {

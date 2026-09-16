@@ -1,441 +1,478 @@
 {
-  "_comment": "Editor panel, measured from 'Signalbox editor.svg'. Layout units are the 1512x982 artboard; the whole thing scales to fit the window. The SVG draws the 1560x1008 backdrop at 0.975419 with a small negative offset, so the backdrop overhangs the artboard by a few px; drawing it any other way drifts every baked detail by up to 12 px at the right edge.",
+  "_comment": "Editor panel, measured from 'Signalbox editor.svg' (2026-09-16 version). Layout units are the 1512x982 artboard. The SVG draws the 1553x1013 backdrop at 0.976819 with offset (-10,-4.78); draw it exactly so, or every printed detail drifts. The backdrop carries every control's OFF state, so a lamp or button that is off simply draws nothing.",
   "artboard": {
     "w": 1512,
     "h": 982
   },
   "backdrop": {
-    "img": "panel",
-    "x": -2.826,
-    "y": -2.611,
-    "w": 1521.65,
-    "h": 983.22
+    "x": -10.0,
+    "y": -4.78,
+    "w": 1517.0,
+    "h": 989.52,
+    "img": "panel"
   },
   "header": {
     "lamps": [
       {
+        "id": "dev",
+        "off": {
+          "x": 474,
+          "y": 19.4,
+          "w": 30,
+          "h": 30
+        },
+        "on": {
+          "x": 473.3,
+          "y": 18.7,
+          "w": 31.4,
+          "h": 31.2
+        }
+      },
+      {
         "id": "match",
-        "x": 514.5,
-        "y": 30.0,
-        "w": 23,
-        "h": 23
+        "off": {
+          "x": 527,
+          "y": 19.4,
+          "w": 30,
+          "h": 30
+        },
+        "on": {
+          "x": 526.75,
+          "y": 19.4,
+          "w": 31.4,
+          "h": 31.2
+        }
       },
       {
         "id": "diff",
-        "x": 566.5,
-        "y": 30.0,
-        "w": 23,
-        "h": 23
+        "off": {
+          "x": 575.5,
+          "y": 19.4,
+          "w": 33,
+          "h": 33
+        },
+        "on": {
+          "x": 576,
+          "y": 19.4,
+          "w": 32,
+          "h": 32
+        }
       },
       {
         "id": "offline",
-        "x": 619.5,
-        "y": 30.0,
-        "w": 23,
-        "h": 23
+        "off": {
+          "x": 627.5,
+          "y": 19.4,
+          "w": 33,
+          "h": 33
+        },
+        "on": {
+          "x": 628,
+          "y": 19.4,
+          "w": 32,
+          "h": 32
+        }
       }
     ],
     "lever": {
       "day": {
-        "img": "lever-day",
-        "x": 669.0,
-        "y": 6.3,
-        "w": 178.0,
+        "x": 687,
+        "y": 2,
+        "w": 185.8,
         "h": 79.5
       },
       "night": {
-        "img": "lever-night",
-        "x": 671.0,
-        "y": 6.3,
-        "w": 173.8,
-        "h": 73.6
+        "x": 686,
+        "y": 1,
+        "w": 186.8,
+        "h": 80.6
       }
     },
     "lever_pads": {
       "day": {
-        "x": 660,
+        "x": 695,
         "y": 14,
-        "w": 84,
+        "w": 82,
         "h": 62
       },
       "night": {
-        "x": 762,
+        "x": 790,
         "y": 14,
-        "w": 84,
+        "w": 82,
         "h": 62
       }
     },
     "sync": {
-      "img": "push-sync",
-      "x": 854.2,
-      "y": 13.6,
-      "w": 63.5,
-      "h": 63.6
+      "x": 888,
+      "y": 11,
+      "w": 59,
+      "h": 67
     },
     "restart": {
-      "img": "push-restart",
-      "x": 921.0,
-      "y": 12.8,
-      "w": 72.0,
-      "h": 63.7
+      "x": 947,
+      "y": 11,
+      "w": 76,
+      "h": 72
     },
     "transport": {
       "play": {
-        "x": 1014.0,
-        "y": 18.0,
-        "w": 43.0,
-        "h": 51.9
+        "x": 1036,
+        "y": 16,
+        "w": 43.1,
+        "h": 52.5
       },
       "pause": {
-        "x": 1062.0,
-        "y": 19.1,
-        "w": 36.8,
-        "h": 48.9
+        "x": 1083,
+        "y": 17,
+        "w": 40.6,
+        "h": 52
       },
       "stop": {
-        "x": 1103.0,
-        "y": 19.0,
-        "w": 39.0,
-        "h": 52.0
+        "x": 1128,
+        "y": 17,
+        "w": 42,
+        "h": 52.3
       }
     },
     "sim_lamp": {
-      "x": 1183.0,
-      "y": 35.0,
-      "w": 22.0,
-      "h": 22.0
+      "off": {
+        "x": 1210,
+        "y": 34,
+        "w": 22,
+        "h": 22
+      },
+      "on": {
+        "x": 1209.64,
+        "y": 33.86,
+        "w": 22.7,
+        "h": 22.2
+      }
     },
     "volume": {
       "knob": {
-        "x": 1247.0,
-        "y": 35.0,
+        "x": 1267.95,
+        "y": 35,
         "w": 37.9,
-        "h": 38.0
+        "h": 38
       },
-      "meter_x0": 1296.3,
-      "meter_dx": 7.13,
-      "meter_y": 47.6,
-      "meter_w": 5.0,
-      "meter_h": 15.0,
+      "meter_x0": 1315.3,
+      "meter_dx": 5.1875,
+      "meter_y": 45.65,
+      "meter_w": 3.64,
+      "meter_h": 16,
       "segments": 8
     },
     "revert": {
-      "x": 1378,
-      "y": 22,
-      "w": 58,
-      "h": 46
+      "x": 1385,
+      "y": 20,
+      "w": 52,
+      "h": 48
     },
     "save": {
-      "x": 1444,
-      "y": 22,
+      "x": 1441,
+      "y": 20,
       "w": 52,
-      "h": 46
+      "h": 48
     }
   },
   "sidebar": {
     "refresh": {
-      "x": 228,
-      "y": 100,
-      "w": 30,
-      "h": 30
+      "x": 203,
+      "y": 106,
+      "w": 38,
+      "h": 36
     },
     "list": {
-      "x": 24,
-      "y": 149.3,
-      "w": 220,
-      "h": 564.7,
-      "row_h": 28.7
+      "x": 22,
+      "y": 144.9,
+      "w": 216,
+      "h": 544.1,
+      "row_h": 28.84
     },
     "track": {
-      "x": 244,
-      "y": 154,
-      "w": 6,
-      "h": 546
+      "x": 249.5,
+      "y": 147,
+      "w": 12.5,
+      "h": 543
     }
   },
   "ambient": {
     "transport": {
       "play": {
-        "x": 315.0,
-        "y": 151.0,
-        "w": 54.0,
-        "h": 43.2
+        "x": 308,
+        "y": 147,
+        "w": 52,
+        "h": 48.6
       },
       "pause": {
-        "x": 379.0,
-        "y": 150.0,
-        "w": 43.0,
-        "h": 43.0
+        "x": 368,
+        "y": 147,
+        "w": 46,
+        "h": 48
       },
       "stop": {
-        "x": 431.0,
-        "y": 152.0,
-        "w": 45.0,
-        "h": 40.0
+        "x": 424,
+        "y": 147,
+        "w": 48,
+        "h": 49
       }
     },
     "name": {
-      "x": 500,
-      "y": 156,
-      "w": 654,
-      "h": 30
+      "x": 504,
+      "y": 151,
+      "w": 647,
+      "h": 38
     },
     "volume": {
       "knob": {
-        "x": 1283.0,
-        "y": 155.0,
+        "x": 1271.96,
+        "y": 153,
         "w": 39.9,
-        "h": 40.0
+        "h": 40
       },
       "meter_x0": 1339.3,
-      "meter_dx": 6.85,
-      "meter_y": 164.0,
-      "meter_w": 5.0,
-      "meter_h": 15.0,
+      "meter_dx": 6.81,
+      "meter_y": 164,
+      "meter_w": 5,
+      "meter_h": 15,
       "segments": 21
     }
   },
   "story": {
     "back": {
       "x": 300,
-      "y": 288,
-      "w": 24,
-      "h": 28
+      "y": 284,
+      "w": 27,
+      "h": 30
     },
     "slots": [
       {
-        "x": 347.0,
-        "y": 292.0,
-        "w": 112.0,
-        "h": 19.0
+        "x": 343,
+        "y": 289,
+        "w": 112,
+        "h": 19
       },
       {
-        "x": 487.0,
-        "y": 292.0,
-        "w": 122.0,
-        "h": 19.0
+        "x": 479,
+        "y": 289,
+        "w": 122,
+        "h": 19
       },
       {
-        "x": 644.0,
-        "y": 292.0,
-        "w": 97.0,
-        "h": 19.0
+        "x": 638,
+        "y": 289,
+        "w": 97,
+        "h": 19
       },
       {
-        "x": 784.6,
-        "y": 292.0,
-        "w": 117.0,
-        "h": 19.0
+        "x": 779.6,
+        "y": 289,
+        "w": 117,
+        "h": 19
       },
       {
-        "x": 941.5,
-        "y": 292.0,
-        "w": 136.0,
-        "h": 19.0
+        "x": 933.5,
+        "y": 289,
+        "w": 136,
+        "h": 19
       },
       {
-        "x": 1109.3,
-        "y": 292.0,
-        "w": 188.0,
-        "h": 19.0
+        "x": 1101.3,
+        "y": 289,
+        "w": 182,
+        "h": 19
       }
     ],
     "forward": {
       "x": 1307.3,
-      "y": 291.0,
-      "w": 23.0,
-      "h": 28.0
+      "y": 291,
+      "w": 23,
+      "h": 28
     },
     "restart": {
       "x": 1346.5,
-      "y": 278.0,
-      "w": 58.0,
-      "h": 56.0
+      "y": 278,
+      "w": 58,
+      "h": 56
     }
   },
   "scenes": {
-    "_comment": "The scene frame is cut into three horizontal pieces: a fixed top (header, fields, ruler), one sound-lane strip repeated once per lane at exactly row_h, and a fixed bottom (sound selector, add row, bin). Inner coordinates are relative to the frame's top-left; the well guide in the SVG is 7 rows of 28.85 px.",
+    "_comment": "Three pieces: a fixed top, one printed lane strip per sound at row_h, a fixed bottom. Inner coordinates are relative to the frame's top-left (281,370). The lane pitch is measured from the lines printed in the well.",
     "area": {
-      "x": 283.95,
-      "y": 369.02,
-      "w": 1211.47,
-      "h": 474
+      "x": 281.0,
+      "y": 370.0,
+      "w": 1213.0,
+      "h": 461.5
     },
     "frame": {
       "img": "scene",
-      "w": 1211.47,
-      "h": 407.73,
-      "top_h": 135.98,
-      "bottom_y": 337.78,
+      "w": 1213.0,
+      "h": 402.0,
+      "top_h": 133.0,
+      "bottom_y": 323.26,
       "lane_img": "scene-lane",
-      "gap": 15
+      "gap": 14
     },
-    "row_h": 28.85,
+    "row_h": 27.18,
     "inner": {
-      "plate": {
-        "x": 20,
-        "y": 8,
-        "w": 96,
-        "h": 34
-      },
       "name": {
-        "x": 172.05,
-        "y": 21.98,
+        "x": 175.0,
+        "y": 21.0,
         "w": 447,
         "h": 24
       },
       "transport": {
         "play": {
-          "x": 923.05,
-          "y": 12.98,
+          "x": 914.0,
+          "y": 10.0,
           "w": 46.1,
-          "h": 38.1
+          "h": 39.1
         },
         "pause": {
-          "x": 986.55,
-          "y": 15.07,
-          "w": 44.1,
-          "h": 37.9
+          "x": 976.0,
+          "y": 10.0,
+          "w": 42.6,
+          "h": 40
         },
         "stop": {
-          "x": 1044.94,
-          "y": 14.83,
-          "w": 42.1,
-          "h": 37.4
+          "x": 1036.0,
+          "y": 11.0,
+          "w": 47,
+          "h": 38.3
         }
       },
       "more": {
-        "x": 1110,
-        "y": 12,
+        "x": 1103.0,
+        "y": 13.0,
         "w": 20,
         "h": 36
       },
       "remove": {
-        "x": 1152.05,
-        "y": 13.34,
+        "x": 1144.0,
+        "y": 10.36,
         "w": 44,
         "h": 39.4
       },
       "min": {
-        "x": 76.05,
-        "y": 70.98,
+        "x": 79.0,
+        "y": 66.0,
         "w": 96,
         "h": 24
       },
       "max": {
-        "x": 270.05,
-        "y": 70.98,
+        "x": 268.0,
+        "y": 68.0,
         "w": 96,
         "h": 24
       },
       "story": {
-        "x": 545.05,
-        "y": 70.98,
+        "x": 538.0,
+        "y": 67.0,
         "w": 295,
         "h": 24
       },
       "step": {
-        "x": 958.05,
-        "y": 72.98,
+        "x": 955.0,
+        "y": 68.0,
         "w": 122,
         "h": 24
       },
       "well": {
-        "x": 19.05,
-        "w": 1152,
-        "gutter_w": 160,
+        "x": 15.5,
+        "w": 1182,
+        "gutter_w": 159.9,
         "score_pad": 6
       },
       "sound_sel": {
-        "x": 99.05,
-        "y": 366.98,
+        "x": 94.0,
+        "y": 353.0,
         "w": 278,
         "h": 26
       },
       "add_row": {
-        "x": 416.05,
-        "y": 356.98,
+        "x": 408.0,
+        "y": 350.0,
         "w": 118,
         "h": 37
       },
       "delete": {
-        "x": 1153.05,
-        "y": 359.98,
+        "x": 1147.0,
+        "y": 349.0,
         "w": 32,
         "h": 37
       }
     },
     "add_scene": {
       "img": "add-scene",
-      "x": -1.95,
-      "w": 175.6,
-      "h": 44.9
+      "x": 3.0,
+      "w": 168,
+      "h": 48
     }
   },
   "inspector": {
     "name": {
-      "x": 148,
-      "y": 890,
-      "w": 196,
-      "h": 30
+      "x": 181,
+      "y": 880,
+      "w": 236,
+      "h": 36
     },
     "knobs": [
       {
         "id": "volume",
         "label": "VOL",
-        "x": 482.0,
-        "y": 909.0
+        "x": 477.96,
+        "y": 895
       },
       {
         "id": "pan",
         "label": "PAN",
-        "x": 588.6,
-        "y": 909.0
+        "x": 584.64,
+        "y": 894
       },
       {
         "id": "filter",
         "label": "FILTER",
-        "x": 695.1,
-        "y": 908.0
+        "x": 690.08,
+        "y": 895
       },
       {
         "id": "offset",
         "label": "START",
-        "x": 800.9,
-        "y": 909.0
+        "x": 795.87,
+        "y": 894
       },
       {
         "id": "duration",
         "label": "LENGTH",
-        "x": 907.7,
-        "y": 908.0
+        "x": 902.72,
+        "y": 894
       },
       {
         "id": "fade_in",
         "label": "FADE IN",
-        "x": 1016.9,
-        "y": 908.0
+        "x": 1010.9,
+        "y": 895
       },
       {
         "id": "fade_out",
         "label": "FADE OUT",
-        "x": 1124.8,
-        "y": 909.0
+        "x": 1117.85,
+        "y": 894
       },
       {
         "id": "reverb_room",
         "label": "ROOM",
-        "x": 1232.6,
-        "y": 908.0
+        "x": 1226.64,
+        "y": 894
       },
       {
         "id": "reverb_wet",
         "label": "WET",
-        "x": 1340.5,
-        "y": 910.0
+        "x": 1334.48,
+        "y": 895
       }
     ],
-    "knob_size": 42,
+    "knob_size": 41.9,
     "knob_sweep": {
       "base_rotation_deg": -135,
       "sweep_deg": 270

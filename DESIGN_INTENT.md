@@ -216,17 +216,33 @@ is kept at `/classic`.
 - One fixed 1512x982 artboard scaled to fit the window, as on the phone. Every
   control's position is measured from the artwork and lives in
   `design/editor-geometry.json`, which the template reads at render time.
-- **The backdrop is drawn exactly as the SVG draws it**: the 1560x1008 image at
-  scale 0.975419 with a (-2.8, -2.6) offset, overhanging the artboard and clipped.
+- **Rebuilt on the 2026-09-16 SVG** (new backdrop style). The recipe, so the next
+  redraw takes an hour and not a day: dump the SVG's `<g transform>` / `<use>` /
+  guide `<rect>` lines for every control's box, extract the embedded images, render
+  the SVG with headless Chrome at 2x as the reference, pixel-scan that render for
+  the printed landmarks (lane lines, well edges, gutter divider, plates), write
+  `design/editor-geometry.json`, then diff a 2x screenshot of the page against the
+  reference region by region. `tools/` has no script for it yet; the steps live in
+  the session transcript of 2026-09-16.
+- **The printed panel is the OFF state of everything.** Lamps are dark holes, the
+  lever slot is empty, buttons are unlit plates, SYNC and RESTART are plain plates.
+  So a control that is off draws nothing (`setImage(null)`), and only ON states
+  need artwork: green button set (simulation, scenes), red set (ambient loop),
+  lamp-green / lamp-amber (lamp-off exists too, since the artist placed it), the
+  two lever images, the X. Lamps have a slightly different box when lit; the
+  geometry carries both.
+- **The backdrop is drawn exactly as the SVG draws it**: the 1553x1013 image at
+  scale 0.976819 with a (-10, -4.8) offset, overhanging the artboard and clipped.
   The first build stretched it to 1512x982 instead. That is a 0.6% squeeze, which
   is nothing at the left edge and 12 px at the right, so every printed detail
   drifted away from the controls placed by SVG coordinates. If the panel ever looks
   "almost right", check this first.
 - **The scene panel is three pieces**, so it grows with its sound lanes: a fixed
   top (header, fields, ruler), one printed lane strip (`scene-lane.webp`) repeated
-  once per sound at exactly `row_h` = 28.85 px, and a fixed bottom (sound selector,
-  add row, bin). The pitch comes from the SVG's "7 row scene box" guide: 202 px for
-  7 rows. Lanes therefore land on the lines printed in the well. A nine-slice with
+  once per sound at exactly `row_h` (27.18 px in the current art), and a fixed
+  bottom (sound selector, add row, bin). Measure the pitch from the lines printed
+  in the well of the rendered SVG, not from the "7 row scene box" guide rect, which
+  was not redrawn with the art. Lanes therefore land on the printed lines. A nine-slice with
   `border-image` cannot do this, because its slices are integer source pixels and
   the pitch is not.
 - The scene list scrolls over its own metal tile, so the panel printed into the
