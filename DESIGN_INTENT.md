@@ -216,13 +216,32 @@ is kept at `/classic`.
 - One fixed 1512x982 artboard scaled to fit the window, as on the phone. Every
   control's position is measured from the artwork and lives in
   `design/editor-geometry.json`, which the template reads at render time.
-- **The scene panel is nine-sliced**, so it grows with its sound lanes: a scene with
-  two lanes and one with nine use the same frame. The top cut falls at artboard
-  y 515, below the SOUNDS gutter label; cut any higher and the label ghosts down
-  the well. The frame is a separate layer inside the panel, so controls keep
-  artboard coordinates rather than being pushed in by a border.
+- **The backdrop is drawn exactly as the SVG draws it**: the 1560x1008 image at
+  scale 0.975419 with a (-2.8, -2.6) offset, overhanging the artboard and clipped.
+  The first build stretched it to 1512x982 instead. That is a 0.6% squeeze, which
+  is nothing at the left edge and 12 px at the right, so every printed detail
+  drifted away from the controls placed by SVG coordinates. If the panel ever looks
+  "almost right", check this first.
+- **The scene panel is three pieces**, so it grows with its sound lanes: a fixed
+  top (header, fields, ruler), one printed lane strip (`scene-lane.webp`) repeated
+  once per sound at exactly `row_h` = 28.85 px, and a fixed bottom (sound selector,
+  add row, bin). The pitch comes from the SVG's "7 row scene box" guide: 202 px for
+  7 rows. Lanes therefore land on the lines printed in the well. A nine-slice with
+  `border-image` cannot do this, because its slices are integer source pixels and
+  the pitch is not.
 - The scene list scrolls over its own metal tile, so the panel printed into the
-  backdrop never shows through.
+  backdrop never shows through; the ADD SCENE plate is a control that rides the end
+  of that list, since the printed one sits under the scroller.
+- The sound list snaps to the 28.7 px rows printed in its well, and its thumb is
+  drawn over the printed scrollbar track.
+- Restored from the classic editor: pause is a toggle (pause again to resume; the
+  mixer pauses as a whole), a click on the ruler plays the scene from that moment
+  with a playhead following it, and a click on an empty lane drops another block of
+  that sound there.
+- Not in the panel editor, still only in `/classic`: per-atmosphere LED settings
+  (enabled, brightness, flicker, speed, depth), story pace and "at the end"
+  settings, and playing just the selected block. The artwork has no place for them
+  yet; the values survive a save untouched.
 - Backdrop resolution is 1.03x rather than the 2x a retina screen wants. Only that
   one image is thin; every control is 4x to 21x. Swapping in a larger backdrop later
   means replacing one file and one scale number.

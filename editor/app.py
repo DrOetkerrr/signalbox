@@ -234,6 +234,7 @@ app = Flask(__name__)
 
 _preview_thread = None
 _stop_preview   = threading.Event()
+_preview_gen    = 0          # bumped per preview; a superseded thread sees the change and bows out
 _preview_state  = {"elapsed": 0.0, "total": 0.0, "scene_id": None, "scene_name": None, "playing": False}
 
 _simulate_thread = None
@@ -828,8 +829,9 @@ def advance_story(cfg, name, step):
 
 # ── Preview ───────────────────────────────────────────────────────────────────
 
-def _run_preview(scene, atmosphere, cfg, start_at=0.0):
+def _run_preview(scene, atmosphere, cfg, start_at=0.0, gen=0):
     _stop_preview.clear()
+    mine = lambda: gen == _preview_gen
     events     = sorted(scene.get("events", []), key=lambda e: e.get("start", 0))
     _, total = _build_timeline(scene, cfg)
     _preview_state.update(elapsed=start_at, total=total, scene_id=scene["id"],
@@ -864,7 +866,7 @@ def _run_preview(scene, atmosphere, cfg, start_at=0.0):
                 except Exception as e:
                     print(f"scrub error: {e}")
 
-    while not _stop_preview.is_set():
+    while not _stop_preview.is_set() and mine():
         now = time.time() - start_time
         _preview_state["elapsed"] = now
 
@@ -896,7 +898,10 @@ def _run_preview(scene, atmosphere, cfg, start_at=0.0):
             break
         time.sleep(0.05)
 
-    _preview_state.update(elapsed=0.0, playing=False)
+    # Only the current preview may clear the state: a superseded thread that is
+    # still winding down would otherwise wipe out the one that replaced it.
+    if mine():
+        _preview_state.update(elapsed=0.0, playing=False)
 
 
 # ── Simulate ──────────────────────────────────────────────────────────────────
@@ -1062,7 +1067,7 @@ def scene_durations():
 
 @app.route("/api/preview/<atmosphere>/<scene_id>", methods=["POST"])
 def preview_scene(atmosphere, scene_id):
-    global _preview_thread
+    global _preview_thread, _preview_gen
     cfg   = load_config()
     scene = next((s for s in cfg["atmospheres"].get(atmosphere, {}).get("scenes", [])
                   if s["id"] == scene_id), None)
@@ -1070,13 +1075,14 @@ def preview_scene(atmosphere, scene_id):
         return jsonify({"error": "scene not found"}), 404
     body     = request.get_json(silent=True) or {}
     start_at = max(0.0, float(body.get("start_at", 0)))
+    _preview_gen += 1                      # the old thread may be busy loading a sound and outlive the join
     _stop_preview.set()
     if _preview_thread and _preview_thread.is_alive():
         _preview_thread.join(timeout=1)
     _stop_scene_channels()
     _preview_state.update(playing=True, scene_id=scene_id, elapsed=start_at)
     _preview_thread = threading.Thread(target=_run_preview,
-                                       args=(scene, atmosphere, cfg, start_at), daemon=True)
+                                       args=(scene, atmosphere, cfg, start_at, _preview_gen), daemon=True)
     _preview_thread.start()
     return jsonify({"ok": True})
 

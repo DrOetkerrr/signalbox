@@ -41,7 +41,7 @@
         {
           "id": "id_kzs0jcz",
           "sound": "ambience",
-          "volume": 1
+          "volume": 0.6844017083960843
         }
       ],
       "scenes": [
@@ -108,7 +108,7 @@
             },
             {
               "sound": "sf_tea_pouring",
-              "start": 27,
+              "start": 28.5,
               "volume": 0.75
             },
             {
@@ -1051,8 +1051,8 @@
     }
   },
   "meta": {
-    "config_id": "f2ae17de",
-    "saved_at": "2026-09-15 10:16:24",
+    "config_id": "a46baedc",
+    "saved_at": "2026-09-15 11:41:58",
     "saved_on": "MacBookPro-11AV"
   },
   "sounds": {
