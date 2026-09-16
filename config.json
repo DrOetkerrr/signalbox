@@ -41,7 +41,7 @@
         {
           "id": "id_kzs0jcz",
           "sound": "ambience",
-          "volume": 0.6844017083960843
+          "volume": 0.714041525792711
         }
       ],
       "scenes": [
@@ -807,15 +807,15 @@
             {
               "duration": 0,
               "reverb_room": 0.16,
-              "reverb_wet": 0.25,
+              "reverb_wet": 0.204,
               "sound": "jimmy_travish_coms_by",
               "start": 9,
               "volume": 0.72
             },
             {
               "sound": "radio_whistle_while_you_work",
-              "start": 2,
-              "volume": 0.1
+              "start": 2.5,
+              "volume": 0.237
             },
             {
               "sound": "sf_stairs",
@@ -824,7 +824,7 @@
             },
             {
               "sound": "sf_door_open_2",
-              "start": 7.5,
+              "start": 134,
               "volume": 1
             },
             {
@@ -832,6 +832,46 @@
               "sound": "sf_sheep_sound",
               "start": 18.5,
               "volume": 0.14
+            },
+            {
+              "sound": "sf_train_whisltle_and_passing_by",
+              "start": 42.5,
+              "volume": 0.325
+            },
+            {
+              "sound": "sf_train_whistle_3",
+              "start": 89,
+              "volume": 0.303
+            },
+            {
+              "sound": "sf_door_open_2",
+              "start": 9,
+              "volume": 1
+            },
+            {
+              "sound": "sf_stairs",
+              "start": 0,
+              "volume": 1
+            },
+            {
+              "sound": "sf_stairs",
+              "start": 0,
+              "volume": 1
+            },
+            {
+              "sound": "sf_stairs",
+              "start": 0,
+              "volume": 1
+            },
+            {
+              "sound": "sf_stairs",
+              "start": 136.5,
+              "volume": 1
+            },
+            {
+              "sound": "sf_walking_on_wood_floor",
+              "start": 171.5,
+              "volume": 1
             }
           ],
           "id": "id_7udedbs",
@@ -1051,8 +1091,8 @@
     }
   },
   "meta": {
-    "config_id": "a46baedc",
-    "saved_at": "2026-09-15 11:41:58",
+    "config_id": "ebdf5555",
+    "saved_at": "2026-09-16 22:28:47",
     "saved_on": "MacBookPro-11AV"
   },
   "sounds": {

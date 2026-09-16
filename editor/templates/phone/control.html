@@ -666,8 +666,9 @@ function buildSelectorPage(index) {
 
   // wheels and arrows drive the same drum
   SEL.wheels.forEach(g => attachWheel(el('div', 'sel-hit', box(g), page)));
-  SEL.arrows.up.forEach(g   => press(el('div', 'sel-hit', box(g), page), () => stepScene(-1)));
-  SEL.arrows.down.forEach(g => press(el('div', 'sel-hit', box(g), page), () => stepScene(+1)));
+  // the arrows say which way the rows roll: up rolls them up, bringing the next scene in from below
+  SEL.arrows.up.forEach(g   => press(el('div', 'sel-hit', box(g), page), () => stepScene(+1)));
+  SEL.arrows.down.forEach(g => press(el('div', 'sel-hit', box(g), page), () => stepScene(-1)));
 
   const info = el('div', '', box(SEL.info), page); info.id = 'sel-info';
   el('div', '', {}, info).id = 'sel-info-name';
@@ -693,7 +694,8 @@ function buildSelectorPage(index) {
   return page;
 }
 
-/* drag anywhere on a thumbwheel to spin the drum */
+/* drag anywhere on a thumbwheel to spin the drum. The wheel sits on the drum's
+   axle, so its surface moves with the rows: drag down, the rows come down. */
 function attachWheel(wrap) {
   let dragging = false, startY = 0, startIdx = 0;
   wrap.addEventListener('pointerdown', e => {
@@ -703,7 +705,7 @@ function attachWheel(wrap) {
   wrap.addEventListener('pointermove', e => {
     if (!dragging) return; e.preventDefault(); e.stopPropagation();
     const dy = stagePoint(e).y - startY;
-    setSelIndex(startIdx + dy / (SEL.drum.row_height * 0.62), false);
+    setSelIndex(startIdx - dy / (SEL.drum.row_height * 0.62), false);
   });
   ['pointerup','pointercancel'].forEach(t => wrap.addEventListener(t, () => {
     if (!dragging) return; dragging = false; setSelIndex(Math.round(selIndex), true);
